@@ -1,14 +1,53 @@
 'use client';
 
+import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { collection, query, where } from 'firebase/firestore';
 
 export default function Home() {
   const router = useRouter();
+  const { user, isUserLoading, firestore } = useFirebase();
 
   useEffect(() => {
-    router.replace('/dashboard');
-  }, [router]);
+    if (isUserLoading) {
+      return; // Wait until user status is determined
+    }
 
-  return null;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('uid', '==', user.uid));
+    
+    // This is a simplified check. In a real app, you'd use a proper data fetching hook.
+    import('firebase/firestore').then(({ getDocs }) => {
+        getDocs(q).then(snapshot => {
+            if (snapshot.empty) {
+                // Should not happen if signup process is correct
+                router.replace('/login');
+            } else {
+                const userData = snapshot.docs[0].data();
+                if (userData.accountStatus === 'Pending') {
+                    router.replace('/pending-approval');
+                } else if (userData.accountStatus === 'Approved') {
+                    router.replace('/dashboard');
+                } else { // Rejected or other status
+                    router.replace('/login');
+                }
+            }
+        });
+    });
+
+
+  }, [user, isUserLoading, router, firestore]);
+
+  // Render a loading state while we determine where to redirect
+  return (
+      <div className="flex min-h-screen items-center justify-center">
+          <p>Loading...</p>
+      </div>
+  );
 }
