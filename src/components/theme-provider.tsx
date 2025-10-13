@@ -54,7 +54,7 @@ export function ThemeProvider({
     theme,
     setTheme: (theme: Theme) => {
       if (typeof window !== 'undefined') {
-        localStorage.setItem(storageK, theme)
+        localStorage.setItem(storageKey, theme)
       }
       setTheme(theme)
     },
