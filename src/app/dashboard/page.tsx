@@ -43,6 +43,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { mockRecentAttendance, mockUsers } from "@/lib/data";
 
 export default function Dashboard() {
+  const totalSalary = mockUsers.reduce((acc, user) => acc + user.totalSalary, 0);
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -215,7 +217,9 @@ export default function Dashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$37,681.00</div>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(totalSalary)}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   July 2024
                 </p>

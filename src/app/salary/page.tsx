@@ -187,8 +187,8 @@ export default function SalaryPage() {
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={mockSalaryData}>
                                 <XAxis dataKey="month" />
-                                <YAxis />
-                                <Tooltip content={<ChartTooltipContent />} />
+                                <YAxis tickFormatter={(value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(value)} />
+                                <Tooltip content={<ChartTooltipContent formatter={(value, name, props) => [new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(value as number), props.dataKey as string]} />} />
                                 <Legend />
                                 <Bar dataKey="baseSalary" fill="var(--color-baseSalary)" radius={4} />
                                 <Bar dataKey="deductions" fill="var(--color-deductions)" radius={4} />
