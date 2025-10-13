@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { QrScanner as QR } from '@yudiel/react-qr-scanner';
+import { Scanner as QR } from '@yudiel/react-qr-scanner';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
