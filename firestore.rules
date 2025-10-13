@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user account information.
+     * @path /users/{userId}
+     * @allow (create) User with uid 'user123' can create their own profile if request.auth.uid == 'user123'.
+     * @allow (get) Admin user with role 'Admin' can get any user's profile.
+     * @allow (update) Admin user with role 'Admin' can update any user's profile.
+     * @allow (delete) Admin user with role 'Admin' can delete any user's profile.
+     * @deny (create) User with uid 'user123' cannot create a profile with a different userId 'user456'.
+     * @deny (get) Non-admin user cannot get another user's profile.
+     * @deny (update) Non-admin user cannot update another user's profile.
+     * @deny (delete) Non-admin user cannot delete another user's profile.
+     * @principle Enforces user ownership for profile creation and admin-only access for management.
+     */
+    match /users/{userId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is an admin
+      function isAdmin() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      }
+
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+      
+      // Helper function to check if the user is an existing owner of the document
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isAdmin() || isOwner(userId);
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Controls access to attendance records for a specific user.
+     * @path /users/{userId}/attendance/{attendanceId}
+     * @allow (create) User with uid 'user123' can create attendance record under their profile.
+     * @allow (get) User with uid 'user123' can get attendance record under their profile.
+     * @allow (update) Admin user with role 'Admin' can update attendance record under any user's profile.
+     * @allow (delete) Admin user with role 'Admin' can delete attendance record under any user's profile.
+     * @deny (create) User with uid 'user123' cannot create attendance record under another user's profile.
+     * @deny (get) User with uid 'user123' cannot get attendance record under another user's profile.
+     * @deny (update) User with uid 'user123' cannot update attendance record under another user's profile.
+     * @deny (delete) User with uid 'user123' cannot delete attendance record under another user's profile.
+     * @principle Enforces path-based ownership for attendance records.
+     */
+    match /users/{userId}/attendance/{attendanceId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is an admin
+      function isAdmin() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      }
+
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+      
+      // Helper function to check if the user is an existing owner of the document
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Controls access to global application settings.
+     * @path /settings/{settingId}
+     * @allow (get) Admin user with role 'Admin' can get settings.
+     * @allow (create) Admin user with role 'Admin' can create settings.
+     * @allow (update) Admin user with role 'Admin' can update settings.
+     * @allow (delete) Admin user with role 'Admin' can delete settings.
+     * @deny (get) Non-admin user cannot get settings.
+     * @deny (create) Non-admin user cannot create settings.
+     * @deny (update) Non-admin user cannot update settings.
+     * @deny (delete) Non-admin user cannot delete settings.
+     * @principle Restricts access to application settings to admins only.
+     */
+    match /settings/{settingId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is an admin
+      function isAdmin() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      }
+
+      allow get: if isAdmin();
+      allow list: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
