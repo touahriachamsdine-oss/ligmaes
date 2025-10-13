@@ -1,3 +1,5 @@
+
+'use client';
 import Link from "next/link";
 import {
   Activity,
@@ -18,8 +20,28 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { mockSalaryData } from "@/lib/data";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 export default function SalaryPage() {
+
+    const chartConfig = {
+        baseSalary: {
+            label: "Base Salary",
+            color: "hsl(var(--chart-1))",
+        },
+        deductions: {
+            label: "Deductions",
+            color: "hsl(var(--chart-2))",
+        },
+        netSalary: {
+            label: "Net Salary",
+            color: "hsl(var(--chart-3))",
+        },
+    };
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -154,13 +176,28 @@ export default function SalaryPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm m-8">
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-2xl font-bold tracking-tight">Salary</h3>
-              <p className="text-sm text-muted-foreground">
-                Coming soon.
-              </p>
-            </div>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Salary Overview</CardTitle>
+                    <CardDescription>A summary of your salary for the past 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={mockSalaryData}>
+                                <XAxis dataKey="month" />
+                                <YAxis />
+                                <Tooltip content={<ChartTooltipContent />} />
+                                <Legend />
+                                <Bar dataKey="baseSalary" fill="var(--color-baseSalary)" radius={4} />
+                                <Bar dataKey="deductions" fill="var(--color-deductions)" radius={4} />
+                                <Bar dataKey="netSalary" fill="var(--color-netSalary)" radius={4} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
         </main>
       </div>
     </div>

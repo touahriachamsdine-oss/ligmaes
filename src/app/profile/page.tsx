@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Activity,
@@ -18,8 +19,20 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { mockAdminUser } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProfilePage() {
+  const user = mockAdminUser;
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -154,14 +167,33 @@ export default function ProfilePage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm m-8">
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-2xl font-bold tracking-tight">Profile</h3>
-              <p className="text-sm text-muted-foreground">
-                Coming soon.
-              </p>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>My Profile</CardTitle>
+            <CardDescription>Your personal and professional information.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
+              <Avatar className="h-32 w-32">
+                <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person face" />
+                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="grid gap-4 text-center md:text-left">
+                <div className="grid gap-1">
+                  <h2 className="text-2xl font-bold">{user.name}</h2>
+                  <p className="text-muted-foreground">{user.email}</p>
+                </div>
+                <div className="flex items-center justify-center gap-2 md:justify-start">
+                  <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge>
+                  <span className="text-muted-foreground">{user.rank}</span>
+                </div>
+                <Button>Edit Profile</Button>
+              </div>
             </div>
-        </main>
+          </CardContent>
+        </Card>
+      </main>
       </div>
     </div>
   );

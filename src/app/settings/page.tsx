@@ -1,3 +1,5 @@
+
+'use client';
 import Link from "next/link";
 import {
   Activity,
@@ -18,6 +20,16 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function SettingsPage() {
   return (
@@ -117,8 +129,7 @@ export default function SettingsPage() {
                 >
                   <Activity className="h-5 w-5" />
                   Attendance
-                </Link>
-                 <Link
+                </Link>                 <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
@@ -154,13 +165,33 @@ export default function SettingsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm m-8">
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-2xl font-bold tracking-tight">Settings</h3>
-              <p className="text-sm text-muted-foreground">
-                Coming soon.
-              </p>
-            </div>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Settings</CardTitle>
+              <CardDescription>
+                Manage your company&apos;s information and settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="company-name">Company Name</Label>
+                <Input id="company-name" defaultValue="AtProfit Inc." />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="company-address">Company Address</Label>
+                <Textarea
+                  id="company-address"
+                  defaultValue="123 Innovation Drive, Tech City, 12345"
+                />
+              </div>
+               <div className="grid gap-2">
+                <Label htmlFor="pay-cut-rate">Pay Cut Rate (%) per Missed Day</Label>
+                <Input id="pay-cut-rate" type="number" defaultValue="2" />
+              </div>
+              <Button>Save Changes</Button>
+            </CardContent>
+          </Card>
         </main>
       </div>
     </div>

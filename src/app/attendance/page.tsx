@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Activity,
@@ -18,8 +19,34 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { mockUsers } from "@/lib/data";
+import { mockRecentAttendance } from "@/lib/data";
 
 export default function AttendancePage() {
+  const attendanceData = [...mockRecentAttendance, 
+    { id: 'att5', userId: 'emp005', userName: 'Isabella Jones', userAvatarUrl: 'https://picsum.photos/seed/6/100/100', date: '2024-07-29', checkInTime: '09:00', status: 'Present' },
+    { id: 'att6', userId: 'emp003', userName: 'Sophia Williams', userAvatarUrl: 'https://picsum.photos/seed/4/100/100', date: '2024-07-29', checkInTime: '08:45', status: 'Present' },
+    { id: 'att7', userId: 'admin001', userName: 'Admin User', userAvatarUrl: 'https://picsum.photos/seed/1/100/100', date: '2024-07-29', checkInTime: '09:05', status: 'Present' }
+  ];
+
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -154,13 +181,66 @@ export default function AttendancePage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm m-8">
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-2xl font-bold tracking-tight">Attendance</h3>
-              <p className="text-sm text-muted-foreground">
-                Coming soon.
-              </p>
-            </div>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Attendance</CardTitle>
+              <CardDescription>
+                View and manage employee attendance records.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Check-in Time</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attendanceData.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage
+                              src={item.userAvatarUrl}
+                              alt="Avatar"
+                              data-ai-hint="person face"
+                            />
+                            <AvatarFallback>
+                              {item.userName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">{item.userName}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.date}</TableCell>
+                      <TableCell>{item.checkInTime || "--"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            item.status === "Present"
+                              ? "secondary"
+                              : item.status === "Late"
+                              ? "outline"
+                              : item.status === "On Leave"
+                              ? "default"
+                              : "destructive"
+                          }
+                          className="text-xs"
+                        >
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </main>
       </div>
     </div>
