@@ -9,9 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { User } from '@/lib/types';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
@@ -20,13 +19,13 @@ import { Checkbox } from '../ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 
 const weekDays = [
-    { id: 0, label: 'Sunday' },
-    { id: 1, label: 'Monday' },
-    { id: 2, label: 'Tuesday' },
-    { id: 3, label: 'Wednesday' },
-    { id: 4, label: 'Thursday' },
-    { id: 5, label: 'Friday' },
-    { id: 6, label: 'Saturday' },
+    { id: 0, label: 'Sun' },
+    { id: 1, label: 'Mon' },
+    { id: 2, label: 'Tue' },
+    { id: 3, label: 'Wed' },
+    { id: 4, label: 'Thu' },
+    { id: 5, label: 'Fri' },
+    { id: 6, label: 'Sat' },
 ]
 
 const formSchema = z.object({
@@ -73,7 +72,7 @@ export function EditEmployeeDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
           <DialogDescription>
@@ -81,7 +80,7 @@ export function EditEmployeeDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="name"
@@ -164,7 +163,7 @@ export function EditEmployeeDialog({
                       <div className="mb-4">
                         <FormLabel>Work Days</FormLabel>
                       </div>
-                      <div className="flex flex-wrap gap-4">
+                      <div className="grid grid-cols-4 gap-4">
                       {weekDays.map((day) => (
                         <FormField
                           key={day.id}
@@ -174,7 +173,7 @@ export function EditEmployeeDialog({
                             return (
                               <FormItem
                                 key={day.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
+                                className="flex flex-row items-center space-x-2 space-y-0"
                               >
                                 <FormControl>
                                   <Checkbox
@@ -190,7 +189,7 @@ export function EditEmployeeDialog({
                                     }}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">
+                                <FormLabel className="font-normal text-sm">
                                   {day.label}
                                 </FormLabel>
                               </FormItem>
