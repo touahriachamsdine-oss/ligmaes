@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   Activity,
   CircleUser,
+  Clock,
   DollarSign,
   Menu,
   Users,
@@ -51,6 +52,13 @@ export default function ProfilePage() {
               >
                 <Users className="h-4 w-4" />
                 Dashboard
+              </Link>
+               <Link
+                href="/clock-in"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Clock className="h-4 w-4" />
+                Clock In
               </Link>
               <Link
                 href="/employees"
@@ -116,6 +124,13 @@ export default function ProfilePage() {
                 >
                   <Users className="h-5 w-5" />
                   Dashboard
+                </Link>
+                 <Link
+                  href="/clock-in"
+                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Clock className="h-5 w-5" />
+                  Clock In
                 </Link>
                 <Link
                   href="/employees"

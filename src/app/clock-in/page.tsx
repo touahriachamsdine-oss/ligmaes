@@ -21,18 +21,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { QrScanner } from "@/components/clock-in/qr-scanner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function SettingsPage() {
+export default function ClockInPage() {
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -52,9 +45,9 @@ export default function SettingsPage() {
                 <Users className="h-4 w-4" />
                 Dashboard
               </Link>
-               <Link
+              <Link
                 href="/clock-in"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
               >
                 <Clock className="h-4 w-4" />
                 Clock In
@@ -86,7 +79,7 @@ export default function SettingsPage() {
              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
                 <Link
                 href="/settings"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                 <Users className="h-4 w-4" />
                 Settings
@@ -124,9 +117,9 @@ export default function SettingsPage() {
                   <Users className="h-5 w-5" />
                   Dashboard
                 </Link>
-                 <Link
+                <Link
                   href="/clock-in"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
                   <Clock className="h-5 w-5" />
                   Clock In
@@ -144,7 +137,8 @@ export default function SettingsPage() {
                 >
                   <Activity className="h-5 w-5" />
                   Attendance
-                </Link>                 <Link
+                </Link>
+                 <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
@@ -153,7 +147,7 @@ export default function SettingsPage() {
                 </Link>
                  <Link
                   href="/settings"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
+                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
                   Settings
@@ -180,31 +174,16 @@ export default function SettingsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          <Card>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8">
+          <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>Company Settings</CardTitle>
+              <CardTitle>Clock In</CardTitle>
               <CardDescription>
-                Manage your company&apos;s information and settings.
+                Scan the daily QR code to clock in for your shift.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="company-name">Company Name</Label>
-                <Input id="company-name" defaultValue="AtProfit Inc." />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="company-address">Company Address</Label>
-                <Textarea
-                  id="company-address"
-                  defaultValue="123 Innovation Drive, Tech City, 12345"
-                />
-              </div>
-               <div className="grid gap-2">
-                <Label htmlFor="pay-cut-rate">Pay Cut Rate (%) per Missed Day</Label>
-                <Input id="pay-cut-rate" type="number" defaultValue="2" />
-              </div>
-              <Button>Save Changes</Button>
+            <CardContent>
+              <QrScanner />
             </CardContent>
           </Card>
         </main>

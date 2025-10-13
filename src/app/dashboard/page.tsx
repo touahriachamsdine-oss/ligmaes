@@ -1,8 +1,11 @@
+
+'use client';
 import Link from "next/link";
 import {
   Activity,
   ArrowUpRight,
   CircleUser,
+  Clock,
   CreditCard,
   DollarSign,
   Menu,
@@ -41,6 +44,7 @@ import {
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { mockRecentAttendance, mockUsers } from "@/lib/data";
+import { QrCodeGenerator } from "@/components/dashboard/qr-code-generator";
 
 export default function Dashboard() {
   const totalSalary = mockUsers.reduce((acc, user) => acc + user.totalSalary, 0);
@@ -63,6 +67,13 @@ export default function Dashboard() {
               >
                 <Users className="h-4 w-4" />
                 Dashboard
+              </Link>
+              <Link
+                href="/clock-in"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Clock className="h-4 w-4" />
+                Clock In
               </Link>
               <Link
                 href="/employees"
@@ -128,6 +139,13 @@ export default function Dashboard() {
                 >
                   <Users className="h-5 w-5" />
                   Dashboard
+                </Link>
+                <Link
+                  href="/clock-in"
+                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Clock className="h-5 w-5" />
+                  Clock In
                 </Link>
                 <Link
                   href="/employees"
@@ -239,6 +257,17 @@ export default function Dashboard() {
             </Card>
           </div>
           <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+             <Card className="xl:col-span-1">
+              <CardHeader>
+                <CardTitle>Daily Clock-In QR Code</CardTitle>
+                <CardDescription>
+                  Employees can scan this code to clock in. It resets daily.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <QrCodeGenerator />
+              </CardContent>
+            </Card>
             <Card className="xl:col-span-2">
               <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
@@ -292,33 +321,6 @@ export default function Dashboard() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Employees</CardTitle>
-                <CardDescription>
-                  By attendance rate this month.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-8">
-                {mockUsers.filter(u => u.attendanceRate > 99).slice(0, 4).map(user => (
-                  <div key={user.uid} className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src={user.avatarUrl} alt="Avatar" data-ai-hint="person portrait" />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">{user.attendanceRate}%</div>
-                </div>
-                ))}
               </CardContent>
             </Card>
           </div>
