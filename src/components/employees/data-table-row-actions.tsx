@@ -12,6 +12,9 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { EditEmployeeDialog } from "./edit-employee-dialog"
+import { useState } from "react"
+import { User } from "@/lib/types"
 
 
 interface DataTableRowActionsProps<TData> {
@@ -21,8 +24,11 @@ interface DataTableRowActionsProps<TData> {
 export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const user = row.original as User;
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -34,7 +40,7 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem>Edit</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
         <DropdownMenuItem>View Attendance</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
@@ -43,5 +49,11 @@ export function DataTableRowActions<TData>({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <EditEmployeeDialog 
+        isOpen={isEditDialogOpen}
+        setIsOpen={setIsEditDialogOpen}
+        user={user}
+    />
+    </>
   )
 }

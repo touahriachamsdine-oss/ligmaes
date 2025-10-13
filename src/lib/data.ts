@@ -11,6 +11,7 @@ export const mockAdminUser: User = {
   totalSalary: 9800,
   attendanceRate: 98,
   daysAbsent: 1,
+  workDays: [1, 2, 3, 4, 5],
 };
 
 export const mockUsers: User[] = [
@@ -25,6 +26,7 @@ export const mockUsers: User[] = [
     totalSalary: 8000,
     attendanceRate: 100,
     daysAbsent: 0,
+    workDays: [1, 2, 3, 4, 5],
   },
   {
     uid: 'emp002',
@@ -37,6 +39,7 @@ export const mockUsers: User[] = [
     totalSalary: 9181,
     attendanceRate: 96,
     daysAbsent: 2,
+    workDays: [1, 2, 3, 4], // Works 4 days
   },
   {
     uid: 'emp003',
@@ -49,6 +52,7 @@ export const mockUsers: User[] = [
     totalSalary: 7200,
     attendanceRate: 100,
     daysAbsent: 0,
+    workDays: [1, 2, 3, 4, 5],
   },
   {
     uid: 'emp004',
@@ -61,17 +65,20 @@ export const mockUsers: User[] = [
     totalSalary: 5000,
     attendanceRate: 91,
     daysAbsent: 4,
+    workDays: [1, 3, 5], // Works 3 days
   },
   {
     uid: 'emp005',
     name: 'Isabella Jones',
     email: 'isabella.jones@example.com',
+    avatarUrl: 'https://picsum.photos/seed/6/100/100',
     role: 'Employee',
     rank: 'QA Engineer',
     baseSalary: 6800,
     totalSalary: 6800,
     attendanceRate: 100,
     daysAbsent: 0,
+    workDays: [1, 2, 3, 4, 5],
   },
 ];
 

@@ -9,6 +9,7 @@ export type User = {
   totalSalary: number;
   attendanceRate: number;
   daysAbsent: number;
+  workDays?: number[]; // 0 for Sunday, 6 for Saturday
 };
 
 export type Attendance = {
