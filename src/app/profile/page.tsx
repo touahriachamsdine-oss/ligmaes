@@ -31,23 +31,26 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useCollection, useFirebase } from "@/firebase";
+import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
-import { useMemo } from "react";
 import { User } from "@/lib/types";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLanguage } from "@/lib/language-provider";
 
 export default function ProfilePage() {
   const { user: authUser, isUserLoading } = useFirebase();
+  const { t } = useLanguage();
 
-  const { data: userData, isLoading: userLoading } = useCollection<User>(useMemo(() => {
+  const userQuery = useMemoFirebase(() => {
     if (!authUser) return null;
     return query(collection(authUser.firestore, "users"), where("uid", "==", authUser.uid));
-  }, [authUser]));
+  }, [authUser]);
+  const { data: userData, isLoading: userLoading } = useCollection<User>(userQuery);
 
   const user = userData?.[0];
 
   if (isUserLoading || userLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">{t('general.loading')}</div>;
   }
 
   if (!user) {
@@ -71,14 +74,14 @@ export default function ProfilePage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Users className="h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
                <Link
                 href="/clock-in"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Clock className="h-4 w-4" />
-                Clock In
+                {t('nav.clockIn')}
               </Link>
               {user.role === 'Admin' && (
                 <Link
@@ -86,7 +89,7 @@ export default function ProfilePage() {
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                   <Users className="h-4 w-4" />
-                  Employees
+                  {t('nav.employees')}
                 </Link>
               )}
               <Link
@@ -94,14 +97,14 @@ export default function ProfilePage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Activity className="h-4 w-4" />
-                Attendance
+                {t('nav.attendance')}
               </Link>
               <Link
                 href="/salary"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <DollarSign className="h-4 w-4" />
-                Salary
+                {t('nav.salary')}
               </Link>
                {user.role === 'Admin' && (
                   <Link
@@ -109,7 +112,7 @@ export default function ProfilePage() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                   >
                     <Users className="h-4 w-4" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
             </nav>
@@ -121,7 +124,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                 <Settings className="h-4 w-4" />
-                Settings
+                {t('nav.settings')}
                 </Link>
              </nav>
           </div>
@@ -154,14 +157,14 @@ export default function ProfilePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                  <Link
                   href="/clock-in"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Clock className="h-5 w-5" />
-                  Clock In
+                  {t('nav.clockIn')}
                 </Link>
                 {user.role === 'Admin' && (
                   <Link
@@ -169,7 +172,7 @@ export default function ProfilePage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    Employees
+                    {t('nav.employees')}
                   </Link>
                 )}
                 <Link
@@ -177,14 +180,14 @@ export default function ProfilePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Activity className="h-5 w-5" />
-                  Attendance
+                  {t('nav.attendance')}
                 </Link>
                  <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <DollarSign className="h-5 w-5" />
-                  Salary
+                  {t('nav.salary')}
                 </Link>
                 {user.role === 'Admin' && (
                   <Link
@@ -192,7 +195,7 @@ export default function ProfilePage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
                  <Link
@@ -200,12 +203,13 @@ export default function ProfilePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Settings className="h-5 w-5" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1" />
+          <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -215,20 +219,20 @@ export default function ProfilePage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/settings">Settings</Link></DropdownMenuItem>
+               <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Logout</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Card>
           <CardHeader>
-            <CardTitle>My Profile</CardTitle>
-            <CardDescription>Your personal and professional information.</CardDescription>
+            <CardTitle>{t('profile.title')}</CardTitle>
+            <CardDescription>{t('profile.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
@@ -245,7 +249,7 @@ export default function ProfilePage() {
                   <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge>
                   <span className="text-muted-foreground">{user.rank}</span>
                 </div>
-                <Button>Edit Profile</Button>
+                <Button>{t('profile.editButton')}</Button>
               </div>
             </div>
           </CardContent>

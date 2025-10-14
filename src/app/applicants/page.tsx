@@ -28,9 +28,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import { useMemo } from 'react';
 import { columns } from '@/components/applicants/columns';
 import { DataTable } from '@/components/applicants/data-table';
 import { User } from '@/lib/types';
@@ -43,19 +42,18 @@ export default function ApplicantsPage() {
   const router = useRouter();
   const { t } = useLanguage();
 
-  const applicantsQuery = useMemo(() => {
+  const applicantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('accountStatus', '==', 'Pending'));
   }, [firestore]);
 
   const { data: applicants, isLoading } = useCollection<User>(applicantsQuery);
 
-    const { data: currentUser } = useCollection<User>(
-    useMemo(() => {
+    const currentUserQuery = useMemoFirebase(() => {
       if (!firestore || !authUser) return null;
       return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
-    }, [firestore, authUser])
-  );
+    }, [firestore, authUser]);
+    const { data: currentUser } = useCollection<User>(currentUserQuery);
   
   const userRole = currentUser?.[0]?.role;
 
@@ -250,7 +248,7 @@ export default function ApplicantsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={columns(t)} data={applicants || []} t={t} />
+              <DataTable columns={columns} data={applicants || []} />
             </CardContent>
           </Card>
         </main>

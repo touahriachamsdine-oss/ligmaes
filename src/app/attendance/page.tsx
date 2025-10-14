@@ -33,26 +33,28 @@ import { AttendanceCalendar } from "@/components/attendance/attendance-calendar"
 import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Attendance, User } from "@/lib/types";
-import { useCollection, useFirebase } from "@/firebase";
+import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
+import { useLanguage } from "@/lib/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function AttendancePage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
+  const { t } = useLanguage();
 
   // Fetch all approved users for the dropdown
-  const usersQuery = useMemo(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
   }, [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
   // Fetch current user's role
-  const { data: currentUserData } = useCollection<User>(
-    useMemo(() => {
+  const currentUserQuery = useMemoFirebase(() => {
       if (!firestore || !authUser) return null;
       return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
-    }, [firestore, authUser])
-  );
+    }, [firestore, authUser]);
+  const { data: currentUserData } = useCollection<User>(currentUserQuery);
   const currentUser = currentUserData?.[0];
 
   // State for the selected user in the dropdown
@@ -61,20 +63,26 @@ export default function AttendancePage() {
   // Determine which user to display attendance for
   const displayUserId = useMemo(() => {
     if (currentUser?.role === 'Admin') {
-      return selectedUserId; // Admin can select any user
+      return selectedUserId || users?.[0]?.uid;
     }
     return authUser?.uid; // Employee can only see their own
-  }, [currentUser, selectedUserId, authUser]);
-
+  }, [currentUser, selectedUserId, authUser, users]);
+  
   const selectedUser = useMemo(() => {
-    return users?.find(u => u.uid === displayUserId) || null;
-  }, [users, displayUserId]);
+    if(currentUser?.role === 'Admin') {
+        return users?.find(u => u.uid === displayUserId) || null;
+    }
+    return currentUser;
+  }, [users, displayUserId, currentUser]);
 
   // Fetch attendance for the selected user
-  const attendanceQuery = useMemo(() => {
-    if (!firestore || !displayUserId) return null;
-    return collection(firestore, 'users', displayUserId, 'attendance');
-  }, [firestore, displayUserId]);
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedUser) return null;
+    // Admin uses `displayUserId` which can be any user, Employee uses their own `selectedUser.uid`
+    const userIdToFetch = currentUser?.role === 'Admin' ? displayUserId : selectedUser.uid;
+    if (!userIdToFetch) return null;
+    return collection(firestore, 'users', userIdToFetch, 'attendance');
+  }, [firestore, selectedUser, currentUser?.role, displayUserId]);
   
   const { data: attendanceData, isLoading: attendanceLoading } = useCollection<Attendance>(attendanceQuery);
   
@@ -84,7 +92,7 @@ export default function AttendancePage() {
   }
 
   if (isUserLoading || usersLoading || (displayUserId && attendanceLoading)) {
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen w-full items-center justify-center">{t('general.loading')}</div>;
   }
 
   return (
@@ -104,14 +112,14 @@ export default function AttendancePage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Users className="h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
                <Link
                 href="/clock-in"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Clock className="h-4 w-4" />
-                Clock In
+                {t('nav.clockIn')}
               </Link>
               {currentUser?.role === 'Admin' && (
                 <Link
@@ -119,7 +127,7 @@ export default function AttendancePage() {
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                   <Users className="h-4 w-4" />
-                  Employees
+                  {t('nav.employees')}
                 </Link>
               )}
               <Link
@@ -127,14 +135,14 @@ export default function AttendancePage() {
                 className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
               >
                 <Activity className="h-4 w-4" />
-                Attendance
+                {t('nav.attendance')}
               </Link>
               <Link
                 href="/salary"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <DollarSign className="h-4 w-4" />
-                Salary
+                {t('nav.salary')}
               </Link>
                {currentUser?.role === 'Admin' && (
                   <Link
@@ -142,7 +150,7 @@ export default function AttendancePage() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                   >
                     <Users className="h-4 w-4" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
             </nav>
@@ -154,7 +162,7 @@ export default function AttendancePage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                 <Settings className="h-4 w-4" />
-                Settings
+                {t('nav.settings')}
                 </Link>
              </nav>
           </div>
@@ -187,14 +195,14 @@ export default function AttendancePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                 <Link
                   href="/clock-in"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Clock className="h-5 w-5" />
-                  Clock In
+                  {t('nav.clockIn')}
                 </Link>
                 {currentUser?.role === 'Admin' && (
                   <Link
@@ -202,7 +210,7 @@ export default function AttendancePage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    Employees
+                    {t('nav.employees')}
                   </Link>
                 )}
                 <Link
@@ -210,14 +218,14 @@ export default function AttendancePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
                   <Activity className="h-5 w-5" />
-                  Attendance
+                  {t('nav.attendance')}
                 </Link>
                  <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <DollarSign className="h-5 w-5" />
-                  Salary
+                  {t('nav.salary')}
                 </Link>
                 {currentUser?.role === 'Admin' && (
                   <Link
@@ -225,7 +233,7 @@ export default function AttendancePage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
                  <Link
@@ -233,12 +241,13 @@ export default function AttendancePage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Settings className="h-5 w-5" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1" />
+          <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -248,12 +257,12 @@ export default function AttendancePage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/settings">Settings</Link></DropdownMenuItem>
+               <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Logout</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
@@ -261,16 +270,16 @@ export default function AttendancePage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Attendance Calendar</CardTitle>
+                <CardTitle>{t('attendance.title')}</CardTitle>
                 <CardDescription>
-                   {currentUser?.role === 'Admin' ? 'View employee attendance in a calendar format.' : 'View your attendance in a calendar format.'}
+                   {currentUser?.role === 'Admin' ? t('attendance.descriptionAdmin') : t('attendance.descriptionEmployee')}
                 </CardDescription>
               </div>
               {currentUser?.role === 'Admin' && (
                 <div className="w-[200px]">
                   <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Employee" />
+                      <SelectValue placeholder={t('attendance.selectEmployee')} />
                     </SelectTrigger>
                     <SelectContent>
                       {users?.map(user => (
@@ -282,10 +291,10 @@ export default function AttendancePage() {
               )}
             </CardHeader>
             <CardContent>
-              {selectedUser ? (
-                 <AttendanceCalendar attendance={attendanceData || []} workDays={selectedUser.workDays}/>
+              {displayUserId ? (
+                 <AttendanceCalendar attendance={attendanceData || []} workDays={selectedUser?.workDays} t={t} />
               ) : (
-                <p>Please select an employee to view their attendance.</p>
+                <p>{t('attendance.pleaseSelect')}</p>
               )}
             </CardContent>
           </Card>
@@ -294,4 +303,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-

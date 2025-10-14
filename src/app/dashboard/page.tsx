@@ -44,21 +44,24 @@ import {
 } from "@/components/ui/table";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useCollection, useFirebase } from "@/firebase";
+import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { Attendance, User } from "@/lib/types";
 import { EmployeeQrCodeGenerator } from "@/components/dashboard/qr-code-generator";
+import { useLanguage } from "@/lib/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function Dashboard() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
+  const { t } = useLanguage();
 
-  const usersQuery = useMemo(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
   }, [firestore]);
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
-  const attendanceQuery = useMemo(() => {
+  const attendanceQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     // For now, we continue to use mock data for recent attendance.
     // A more complex query would be needed for cross-user recent attendance.
@@ -67,12 +70,11 @@ export default function Dashboard() {
 
   const { data: attendance, isLoading: attendanceLoading } = useCollection<Attendance>(attendanceQuery);
   
-  const { data: currentUserData } = useCollection<User>(
-    useMemo(() => {
+  const currentUserQuery = useMemoFirebase(() => {
       if (!firestore || !authUser) return null;
       return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
-    }, [firestore, authUser])
-  );
+  }, [firestore, authUser]);
+  const { data: currentUserData } = useCollection<User>(currentUserQuery);
   
   const currentUser = currentUserData?.[0];
 
@@ -83,7 +85,7 @@ export default function Dashboard() {
     const totalSalaryCost = users.reduce((acc, user) => acc + (user.totalSalary || 0), 0);
     const totalDaysMissed = users.reduce((acc, user) => acc + (user.daysAbsent || 0), 0);
     const totalPossibleAttendance = users.reduce((acc, user) => acc + user.attendanceRate, 0);
-    const averageAttendance = totalPossibleAttendance / totalEmployees;
+    const averageAttendance = totalEmployees > 0 ? totalPossibleAttendance / totalEmployees : 0;
 
     return { totalEmployees, totalSalaryCost, totalDaysMissed, averageAttendance };
   }, [users]);
@@ -97,7 +99,7 @@ export default function Dashboard() {
 
 
   if (isUserLoading || usersLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>
+    return <div className="flex h-screen items-center justify-center">{t('general.loading')}</div>
   }
 
   return (
@@ -117,14 +119,14 @@ export default function Dashboard() {
                 className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
               >
                 <Users className="h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
               <Link
                 href="/clock-in"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Clock className="h-4 w-4" />
-                Clock In
+                {t('nav.clockIn')}
               </Link>
                {currentUser?.role === 'Admin' && (
                 <Link
@@ -132,7 +134,7 @@ export default function Dashboard() {
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                   <Users className="h-4 w-4" />
-                  Employees
+                  {t('nav.employees')}
                 </Link>
                )}
               <Link
@@ -140,14 +142,14 @@ export default function Dashboard() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Activity className="h-4 w-4" />
-                Attendance
+                {t('nav.attendance')}
               </Link>
               <Link
                 href="/salary"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <DollarSign className="h-4 w-4" />
-                Salary
+                {t('nav.salary')}
               </Link>
                {currentUser?.role === 'Admin' && (
                   <Link
@@ -155,7 +157,7 @@ export default function Dashboard() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                   >
                     <Users className="h-4 w-4" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
             </nav>
@@ -167,7 +169,7 @@ export default function Dashboard() {
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                   <Settings className="h-4 w-4" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
              </nav>
           </div>
@@ -200,14 +202,14 @@ export default function Dashboard() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                 <Link
                   href="/clock-in"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Clock className="h-5 w-5" />
-                  Clock In
+                  {t('nav.clockIn')}
                 </Link>
                  {currentUser?.role === 'Admin' && (
                   <Link
@@ -215,7 +217,7 @@ export default function Dashboard() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    Employees
+                    {t('nav.employees')}
                   </Link>
                  )}
                 <Link
@@ -223,14 +225,14 @@ export default function Dashboard() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Activity className="h-5 w-5" />
-                  Attendance
+                  {t('nav.attendance')}
                 </Link>
                  <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <DollarSign className="h-5 w-5" />
-                  Salary
+                  {t('nav.salary')}
                 </Link>
                 {currentUser?.role === 'Admin' && (
                   <Link
@@ -238,7 +240,7 @@ export default function Dashboard() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
                  <Link
@@ -246,7 +248,7 @@ export default function Dashboard() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Settings className="h-5 w-5" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
               </nav>
             </SheetContent>
@@ -254,6 +256,7 @@ export default function Dashboard() {
           <div className="w-full flex-1">
             {/* Can add search here if needed */}
           </div>
+          <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -263,12 +266,12 @@ export default function Dashboard() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/settings">Settings</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Logout</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
@@ -277,34 +280,34 @@ export default function Dashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Employees
+                  {t('dashboard.totalEmployees')}
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalEmployees}</div>
                 <p className="text-xs text-muted-foreground">
-                  Approved accounts
+                  {t('dashboard.approvedAccounts')}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Attendance Rate
+                  {t('dashboard.attendanceRate')}
                 </CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{averageAttendance.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">
-                  Company-wide average
+                  {t('dashboard.companyWideAverage')}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Salary Cost</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.totalSalaryCost')}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -312,19 +315,19 @@ export default function Dashboard() {
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(totalSalaryCost)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Per month
+                  {t('dashboard.perMonth')}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Days Missed (Total)</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.daysMissed')}</CardTitle>
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalDaysMissed}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across all employees
+                  {t('dashboard.acrossAllEmployees')}
                 </p>
               </CardContent>
             </Card>
@@ -333,9 +336,9 @@ export default function Dashboard() {
              {currentUser?.role === 'Admin' && (
               <Card className="xl:col-span-1">
                 <CardHeader>
-                  <CardTitle>Employee Clock-In Codes</CardTitle>
+                  <CardTitle>{t('dashboard.qrCodesTitle')}</CardTitle>
                   <CardDescription>
-                    Generate a temporary, unique QR code for an employee to clock in.
+                    {t('dashboard.qrCodesDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
@@ -348,7 +351,7 @@ export default function Dashboard() {
                         </Avatar>
                         <div className="font-medium">{employee.name}</div>
                       </div>
-                      <EmployeeQrCodeGenerator employee={employee} />
+                      <EmployeeQrCodeGenerator employee={employee} t={t} />
                     </div>
                   ))}
                 </CardContent>
@@ -357,14 +360,14 @@ export default function Dashboard() {
             <Card className={currentUser?.role === 'Admin' ? "xl:col-span-2" : "xl:col-span-3"}>
               <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
-                  <CardTitle>Recent Attendance</CardTitle>
+                  <CardTitle>{t('dashboard.recentAttendance')}</CardTitle>
                   <CardDescription>
-                    Recent check-ins, absences, and late arrivals.
+                    {t('dashboard.recentAttendanceDesc')}
                   </CardDescription>
                 </div>
                 <Button asChild size="sm" className="ml-auto gap-1">
                   <Link href="/attendance">
-                    View All
+                    {t('dashboard.viewAll')}
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -373,9 +376,9 @@ export default function Dashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Date</TableHead>
+                      <TableHead>{t('dashboard.employee')}</TableHead>
+                      <TableHead>{t('dashboard.status')}</TableHead>
+                      <TableHead className="text-right">{t('dashboard.date')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -415,4 +418,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
