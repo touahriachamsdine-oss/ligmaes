@@ -40,26 +40,37 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
+      const isAdmin = values.email.toLowerCase() === 'admin@gmail.com';
+
       const userDoc = {
         uid: user.uid,
         name: values.name,
         email: values.email,
-        role: 'Employee',
-        accountStatus: 'Pending',
-        rank: 'N/A',
-        baseSalary: 0,
-        totalSalary: 0,
+        role: isAdmin ? 'Admin' : 'Employee',
+        accountStatus: isAdmin ? 'Approved' : 'Pending',
+        rank: isAdmin ? 'Administrator' : 'N/A',
+        baseSalary: isAdmin ? 100000 : 0,
+        totalSalary: isAdmin ? 100000 : 0,
         attendanceRate: 100,
         daysAbsent: 0,
+        workDays: [1, 2, 3, 4, 5],
       };
 
       await setDoc(doc(firestore, 'users', user.uid), userDoc);
 
-      toast({
-        title: 'Signup Successful',
-        description: 'Your account is pending administrator approval.',
-      });
-      router.push('/pending-approval');
+      if (isAdmin) {
+        toast({
+          title: 'Admin Account Created',
+          description: 'Your administrator account has been created successfully.',
+        });
+        router.push('/dashboard');
+      } else {
+        toast({
+          title: 'Signup Successful',
+          description: 'Your account is pending administrator approval.',
+        });
+        router.push('/pending-approval');
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
