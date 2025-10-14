@@ -7,7 +7,7 @@ import {
   Clock,
   DollarSign,
   Menu,
-  Settings as SettingsIcon, // Renamed to avoid conflict
+  Settings as SettingsIcon,
   Users,
 } from "lucide-react";
 import {
@@ -40,6 +40,9 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Setting, User } from "@/lib/types";
+import { BottomNavBar } from "@/components/ui/bottom-nav-bar";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLanguage } from "@/lib/language-provider";
 
 const formSchema = z.object({
   payCutRate: z.coerce.number().min(0, "Pay cut rate must be a positive number."),
@@ -51,15 +54,16 @@ const formSchema = z.object({
 export default function SettingsPage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const settingsRef = useMemoFirebase(() => {
-    if (!firestore || !authUser) return null; // Wait until user is loaded
+    if (!firestore || !authUser) return null;
     return doc(firestore, 'settings', 'global');
   }, [firestore, authUser]);
 
   const { data: settingsData, isLoading: settingsLoading } = useDoc<Setting>(settingsRef);
   
-  const { data: currentUserData } = useCollection<User>(
+  const { data: currentUserData, isLoading: isCurrentUserLoading } = useCollection<User>(
     useMemoFirebase(() => {
       if (!firestore || !authUser) return null;
       return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
@@ -91,19 +95,19 @@ export default function SettingsPage() {
     try {
       await setDoc(settingsRef, values, { merge: true });
       toast({
-        title: "Settings Saved",
-        description: "Your company settings have been updated.",
+        title: t('settings.saved'),
+        description: t('settings.savedDesc'),
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error Saving Settings",
+        title: t('settings.error'),
         description: error.message || "An unexpected error occurred.",
       });
     }
   };
 
-  if (isUserLoading || !currentUser || settingsLoading) {
+  if (isUserLoading || !currentUser || settingsLoading || isCurrentUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
 
@@ -126,14 +130,14 @@ export default function SettingsPage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Users className="h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
                <Link
                 href="/clock-in"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Clock className="h-4 w-4" />
-                Clock In
+                {t('nav.clockIn')}
               </Link>
               {isAdmin && (
                 <Link
@@ -141,7 +145,7 @@ export default function SettingsPage() {
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                   <Users className="h-4 w-4" />
-                  Employees
+                  {t('nav.employees')}
                 </Link>
               )}
               <Link
@@ -149,14 +153,14 @@ export default function SettingsPage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Activity className="h-4 w-4" />
-                Attendance
+                {t('nav.attendance')}
               </Link>
               <Link
                 href="/salary"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <DollarSign className="h-4 w-4" />
-                Salary
+                {t('nav.salary')}
               </Link>
                {isAdmin && (
                   <Link
@@ -164,21 +168,17 @@ export default function SettingsPage() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                   >
                     <Users className="h-4 w-4" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <Link
+                 <Link
                   href="/settings"
                   className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
                 >
                   <SettingsIcon className="h-4 w-4" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
-             </nav>
+            </nav>
           </div>
         </div>
       </div>
@@ -209,14 +209,14 @@ export default function SettingsPage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                  <Link
                   href="/clock-in"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Clock className="h-5 w-5" />
-                  Clock In
+                  {t('nav.clockIn')}
                 </Link>
                 {isAdmin && (
                   <Link
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    Employees
+                    {t('nav.employees')}
                   </Link>
                 )}
                 <Link
@@ -232,13 +232,13 @@ export default function SettingsPage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Activity className="h-5 w-5" />
-                  Attendance
+                  {t('nav.attendance')}
                 </Link>                 <Link
                   href="/salary"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <DollarSign className="h-5 w-5" />
-                  Salary
+                  {t('nav.salary')}
                 </Link>
                 {isAdmin && (
                   <Link
@@ -246,7 +246,7 @@ export default function SettingsPage() {
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
                  <Link
@@ -254,12 +254,13 @@ export default function SettingsPage() {
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
                   <SettingsIcon className="h-5 w-5" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1" />
+          <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -269,21 +270,21 @@ export default function SettingsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/settings">Settings</Link></DropdownMenuItem>
+               <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Logout</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Company Settings</CardTitle>
+              <CardTitle>{t('settings.title')}</CardTitle>
               <CardDescription>
-                {isAdmin ? "Manage your company's information and settings." : "View your company's information."}
+                {isAdmin ? t('settings.descriptionAdmin') : t('settings.descriptionEmployee')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -294,7 +295,7 @@ export default function SettingsPage() {
                     name="companyName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Name</FormLabel>
+                        <FormLabel>{t('settings.companyName')}</FormLabel>
                         <FormControl>
                           <Input {...field} readOnly={!isAdmin} />
                         </FormControl>
@@ -307,7 +308,7 @@ export default function SettingsPage() {
                     name="companyAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Address</FormLabel>
+                        <FormLabel>{t('settings.companyAddress')}</FormLabel>
                         <FormControl>
                           <Textarea {...field} readOnly={!isAdmin} />
                         </FormControl>
@@ -320,7 +321,7 @@ export default function SettingsPage() {
                     name="payCutRate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Pay Cut Rate (%) per Missed Day</FormLabel>
+                        <FormLabel>{t('settings.payCutRate')}</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} readOnly={!isAdmin}/>
                         </FormControl>
@@ -328,12 +329,13 @@ export default function SettingsPage() {
                       </FormItem>
                     )}
                   />
-                  {isAdmin && <Button type="submit" disabled={form.formState.isSubmitting}>Save Changes</Button>}
+                  {isAdmin && <Button type="submit" disabled={form.formState.isSubmitting}>{t('settings.saveButton')}</Button>}
                 </form>
               </Form>
             </CardContent>
           </Card>
         </main>
+        <BottomNavBar userRole={currentUser.role} />
       </div>
     </div>
   );

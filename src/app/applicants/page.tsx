@@ -36,6 +36,7 @@ import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useLanguage } from '@/lib/language-provider';
+import { BottomNavBar } from '@/components/ui/bottom-nav-bar';
 
 export default function ApplicantsPage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
@@ -62,7 +63,7 @@ export default function ApplicantsPage() {
     return null;
   }
   
-  if (isUserLoading || isLoading) {
+  if (isUserLoading || isLoading || !currentUser) {
     return <div>{t('general.loading')}</div>
   }
 
@@ -122,11 +123,7 @@ export default function ApplicantsPage() {
                     {t('nav.newApplicants')}
                   </Link>
                 )}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
+                 <Link
                 href="/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
@@ -239,7 +236,7 @@ export default function ApplicantsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
           <Card>
             <CardHeader>
               <CardTitle>{t('applicants.title')}</CardTitle>
@@ -252,6 +249,7 @@ export default function ApplicantsPage() {
             </CardContent>
           </Card>
         </main>
+        <BottomNavBar userRole={userRole} />
       </div>
     </div>
   );

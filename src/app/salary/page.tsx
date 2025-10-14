@@ -28,7 +28,7 @@ import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useFirebase, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { useMemo, useState } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
-import { User, Setting, Salary } from "@/lib/types";
+import { User, Setting, Salary as SalaryType } from "@/lib/types";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { generateAbsenceNotification, AbsenceNotificationInput, AbsenceNotificationOutput } from "@/ai/flows/generate-absence-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -43,16 +43,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { mockSalaryData } from "@/lib/data";
+import { BottomNavBar } from "@/components/ui/bottom-nav-bar";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLanguage } from "@/lib/language-provider";
 
 export default function SalaryPage() {
     const { firestore, user: authUser, isUserLoading } = useFirebase();
     const { toast } = useToast();
+    const { t } = useLanguage();
 
     const [notification, setNotification] = useState<AbsenceNotificationOutput | null>(null);
     const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const { data: currentUserData } = useCollection<User>(useMemoFirebase(() => {
+    const { data: currentUserData, isLoading: isCurrentUserLoading } = useCollection<User>(useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
         return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
     }, [firestore, authUser]));
@@ -68,19 +72,23 @@ export default function SalaryPage() {
 
     const displayUserId = useMemo(() => {
         if (currentUser?.role === 'Admin') {
-            // If admin and no one is selected, default to their own view or first user
-            return selectedUserId || users?.[0]?.uid;
+            return selectedUserId || authUser?.uid;
         }
         return authUser?.uid;
-    }, [currentUser, selectedUserId, authUser, users]);
+    }, [currentUser, selectedUserId, authUser]);
 
-    const { data: selectedUser, isLoading: selectedUserLoading } = useDoc<User>(useMemoFirebase(() => {
+     const { data: selectedUserData, isLoading: selectedUserLoading } = useDoc<User>(useMemoFirebase(() => {
         if (!firestore || !displayUserId) return null;
-        return doc(firestore, 'users', displayUserId);
-    }, [firestore, displayUserId]));
+        const userToQuery = users?.find(u => u.uid === displayUserId);
+        if (!userToQuery) return null;
+        return doc(firestore, 'users', userToQuery.id);
+    }, [firestore, displayUserId, users]));
     
+    const selectedUser = currentUser?.role === 'Admin' ? selectedUserData : currentUser;
+
+
     const settingsRef = useMemoFirebase(() => {
-      if (!firestore || !authUser) return null; // Wait for user
+      if (!firestore || !authUser) return null; 
       return doc(firestore, 'settings', 'global')
     }, [firestore, authUser]);
     const { data: settings } = useDoc<Setting>(settingsRef);
@@ -117,12 +125,11 @@ export default function SalaryPage() {
         netSalary: { label: "Net Salary", color: "hsl(var(--chart-3))" },
     };
 
-    // Set default selection for admin
     if (currentUser?.role === 'Admin' && !selectedUserId && users && users.length > 0) {
       setSelectedUserId(users[0].uid);
     }
 
-    if (isUserLoading || !currentUser || (currentUser.role === 'Admin' && usersLoading) || (displayUserId && selectedUserLoading)) {
+    if (isUserLoading || isCurrentUserLoading || !currentUser || (currentUser.role === 'Admin' && usersLoading) || (displayUserId && selectedUserLoading)) {
       return <div className="flex h-screen w-full items-center justify-center">Loading...</div>
     }
 
@@ -140,41 +147,37 @@ export default function SalaryPage() {
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link href="/dashboard" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
                 <Users className="h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
                <Link href="/clock-in" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
                 <Clock className="h-4 w-4" />
-                Clock In
+                {t('nav.clockIn')}
               </Link>
               {currentUser?.role === 'Admin' && (
                 <Link href="/employees" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
                   <Users className="h-4 w-4" />
-                  Employees
+                  {t('nav.employees')}
                 </Link>
               )}
               <Link href="/attendance" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
                 <Activity className="h-4 w-4" />
-                Attendance
+                {t('nav.attendance')}
               </Link>
               <Link href="/salary" className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary">
                 <DollarSign className="h-4 w-4" />
-                Salary
+                {t('nav.salary')}
               </Link>
                {currentUser?.role === 'Admin' && (
                   <Link href="/applicants" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
                     <Users className="h-4 w-4" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
-                <Settings className="h-4 w-4" />
-                Settings
+                 <Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+                    <Settings className="h-4 w-4" />
+                    {t('nav.settings')}
                 </Link>
-             </nav>
+            </nav>
           </div>
         </div>
       </div>
@@ -195,40 +198,41 @@ export default function SalaryPage() {
                 </Link>
                 <Link href="/dashboard" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                   <Users className="h-5 w-5" />
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                  <Link href="/clock-in" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                   <Clock className="h-5 w-5" />
-                  Clock In
+                  {t('nav.clockIn')}
                 </Link>
                  {currentUser?.role === 'Admin' && (
                   <Link href="/employees" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                     <Users className="h-5 w-5" />
-                    Employees
+                    {t('nav.employees')}
                   </Link>
                  )}
                 <Link href="/attendance" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                   <Activity className="h-5 w-5" />
-                  Attendance
+                  {t('nav.attendance')}
                 </Link>
                  <Link href="/salary" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground">
                   <DollarSign className="h-5 w-5" />
-                  Salary
+                  {t('nav.salary')}
                 </Link>
                 {currentUser?.role === 'Admin' && (
                   <Link href="/applicants" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                     <Users className="h-5 w-5" />
-                    New Applicants
+                    {t('nav.newApplicants')}
                   </Link>
                 )}
                  <Link href="/settings" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                   <Settings className="h-5 w-5" />
-                  Settings
+                  {t('nav.settings')}
                 </Link>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1" />
+           <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -238,38 +242,38 @@ export default function SalaryPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/settings">Settings</Link></DropdownMenuItem>
+               <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Logout</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Salary Overview</CardTitle>
+                        <CardTitle>{t('salary.title')}</CardTitle>
                         <CardDescription>
-                            {currentUser?.role === 'Admin' ? "Review employee salary information." : "A summary of your salary for the past 6 months."}
+                            {currentUser?.role === 'Admin' ? t('salary.descriptionAdmin') : t('salary.descriptionEmployee')}
                         </CardDescription>
                     </div>
-                     {currentUser?.role === 'Admin' && (
+                     {currentUser?.role === 'Admin' && users && (
                         <div className="flex gap-2">
                            <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
                             <SelectTrigger className="w-[200px]">
                               <SelectValue placeholder="Select Employee" />
                             </SelectTrigger>
                             <SelectContent>
-                              {users?.map(user => (
+                              {users.map(user => (
                                 <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                           <Button onClick={handleGenerateNotification} disabled={isGenerating || !selectedUser || selectedUser.daysAbsent === 0}>
-                            {isGenerating ? 'Generating...' : 'Notify Absences'}
+                            {isGenerating ? t('salary.generating') : t('salary.notifyAbsences')}
                           </Button>
                         </div>
                     )}
@@ -294,26 +298,27 @@ export default function SalaryPage() {
          <AlertDialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Absence Notification for {selectedUser?.name}</AlertDialogTitle>
+              <AlertDialogTitle>{t('salary.notificationTitle', {name: selectedUser?.name})}</AlertDialogTitle>
               <AlertDialogDescription>
-                This is the generated notification message. You can copy it or send it directly.
+                {t('salary.notificationDesc')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="my-4 text-sm bg-muted/50 p-4 rounded-md">
               {notification?.notificationText}
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Close</AlertDialogCancel>
+              <AlertDialogCancel>{t('salary.close')}</AlertDialogCancel>
               <AlertDialogAction onClick={() => {
                 if (notification?.notificationText) {
                   navigator.clipboard.writeText(notification.notificationText);
-                  toast({ title: "Copied!", description: "Notification copied to clipboard."});
+                  toast({ title: t('salary.copied'), description: t('salary.copiedDesc')});
                 }
                 setIsNotificationDialogOpen(false);
-              }}>Copy Text</AlertDialogAction>
+              }}>{t('salary.copy')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <BottomNavBar userRole={currentUser.role} />
       </div>
     </div>
   );

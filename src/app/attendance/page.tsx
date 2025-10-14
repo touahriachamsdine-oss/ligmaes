@@ -37,19 +37,18 @@ import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { useLanguage } from "@/lib/language-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { BottomNavBar } from "@/components/ui/bottom-nav-bar";
 
 export default function AttendancePage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
   const { t } = useLanguage();
 
-  // Fetch all approved users for the dropdown
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
   }, [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
-  // Fetch current user's role
   const currentUserQuery = useMemoFirebase(() => {
       if (!firestore || !authUser) return null;
       return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
@@ -57,41 +56,41 @@ export default function AttendancePage() {
   const { data: currentUserData } = useCollection<User>(currentUserQuery);
   const currentUser = currentUserData?.[0];
 
-  // State for the selected user in the dropdown
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Determine which user to display attendance for
   const displayUserId = useMemo(() => {
     if (currentUser?.role === 'Admin') {
       return selectedUserId || users?.[0]?.uid;
     }
-    return authUser?.uid; // Employee can only see their own
+    return authUser?.uid; 
   }, [currentUser, selectedUserId, authUser, users]);
   
   const selectedUser = useMemo(() => {
+    if (!users) return null;
     if(currentUser?.role === 'Admin') {
         return users?.find(u => u.uid === displayUserId) || null;
     }
     return currentUser;
   }, [users, displayUserId, currentUser]);
 
-  // Fetch attendance for the selected user
   const attendanceQuery = useMemoFirebase(() => {
     if (!firestore || !selectedUser) return null;
-    // Admin uses `displayUserId` which can be any user, Employee uses their own `selectedUser.uid`
     const userIdToFetch = currentUser?.role === 'Admin' ? displayUserId : selectedUser.uid;
     if (!userIdToFetch) return null;
-    return collection(firestore, 'users', userIdToFetch, 'attendance');
-  }, [firestore, selectedUser, currentUser?.role, displayUserId]);
+
+    const userToQuery = users?.find(u => u.uid === userIdToFetch);
+    if (!userToQuery) return null;
+
+    return collection(firestore, 'users', userToQuery.id, 'attendance');
+  }, [firestore, selectedUser, currentUser?.role, displayUserId, users]);
   
   const { data: attendanceData, isLoading: attendanceLoading } = useCollection<Attendance>(attendanceQuery);
   
-  // Set default selected user for admin
   if (currentUser?.role === 'Admin' && !selectedUserId && users && users.length > 0) {
       setSelectedUserId(users[0].uid);
   }
 
-  if (isUserLoading || usersLoading || (displayUserId && attendanceLoading)) {
+  if (isUserLoading || !currentUser || usersLoading || (displayUserId && attendanceLoading)) {
     return <div className="flex h-screen w-full items-center justify-center">{t('general.loading')}</div>;
   }
 
@@ -153,18 +152,14 @@ export default function AttendancePage() {
                     {t('nav.newApplicants')}
                   </Link>
                 )}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <Link
+                 <Link
                 href="/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                 <Settings className="h-4 w-4" />
                 {t('nav.settings')}
                 </Link>
-             </nav>
+            </nav>
           </div>
         </div>
       </div>
@@ -266,7 +261,7 @@ export default function AttendancePage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -275,14 +270,14 @@ export default function AttendancePage() {
                    {currentUser?.role === 'Admin' ? t('attendance.descriptionAdmin') : t('attendance.descriptionEmployee')}
                 </CardDescription>
               </div>
-              {currentUser?.role === 'Admin' && (
+              {currentUser?.role === 'Admin' && users && (
                 <div className="w-[200px]">
                   <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
                     <SelectTrigger>
                       <SelectValue placeholder={t('attendance.selectEmployee')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {users?.map(user => (
+                      {users.map(user => (
                         <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -299,6 +294,7 @@ export default function AttendancePage() {
             </CardContent>
           </Card>
         </main>
+         <BottomNavBar userRole={currentUser.role} />
       </div>
     </div>
   );

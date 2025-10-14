@@ -36,6 +36,7 @@ import { collection, query, where } from "firebase/firestore";
 import { User } from "@/lib/types";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/lib/language-provider";
+import { BottomNavBar } from "@/components/ui/bottom-nav-bar";
 
 export default function ProfilePage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
@@ -50,12 +51,8 @@ export default function ProfilePage() {
 
   const user = userData?.[0];
 
-  if (isUserLoading || userLoading) {
+  if (isUserLoading || userLoading || !user) {
     return <div className="flex h-screen items-center justify-center">{t('general.loading')}</div>;
-  }
-
-  if (!user) {
-    return <div className="flex h-screen items-center justify-center">User not found.</div>;
   }
 
   return (
@@ -116,18 +113,14 @@ export default function ProfilePage() {
                     {t('nav.newApplicants')}
                   </Link>
                 )}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <Link
+                 <Link
                 href="/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
                 <Settings className="h-4 w-4" />
                 {t('nav.settings')}
                 </Link>
-             </nav>
+            </nav>
           </div>
         </div>
       </div>
@@ -229,7 +222,7 @@ export default function ProfilePage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.title')}</CardTitle>
@@ -256,6 +249,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </main>
+      <BottomNavBar userRole={user.role} />
       </div>
     </div>
   );
