@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 import { PT_Sans } from 'next/font/google';
+import { LanguageProvider } from '@/lib/language-provider';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -30,10 +31,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <FirebaseClientProvider>
-            {children}
-          </FirebaseClientProvider>
-          <Toaster />
+          <LanguageProvider>
+            <FirebaseClientProvider>
+              {children}
+            </FirebaseClientProvider>
+            <Toaster />
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
