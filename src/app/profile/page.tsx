@@ -38,13 +38,14 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/lib/language-provider";
 
 export default function ProfilePage() {
-  const { user: authUser, isUserLoading } = useFirebase();
+  const { firestore, user: authUser, isUserLoading } = useFirebase();
   const { t } = useLanguage();
 
   const userQuery = useMemoFirebase(() => {
-    if (!authUser) return null;
-    return query(collection(authUser.firestore, "users"), where("uid", "==", authUser.uid));
-  }, [authUser]);
+    if (!firestore || !authUser) return null;
+    return query(collection(firestore, "users"), where("uid", "==", authUser.uid));
+  }, [firestore, authUser]);
+  
   const { data: userData, isLoading: userLoading } = useCollection<User>(userQuery);
 
   const user = userData?.[0];
