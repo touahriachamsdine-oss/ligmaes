@@ -41,12 +41,14 @@ type EditEmployeeDialogProps = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   user: User;
+  t: (key: string) => string;
 };
 
 export function EditEmployeeDialog({
   isOpen,
   setIsOpen,
   user,
+  t
 }: EditEmployeeDialogProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -64,8 +66,8 @@ export function EditEmployeeDialog({
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log('Updated user data:', values);
     toast({
-        title: "Employee Updated",
-        description: `${values.name}'s profile has been updated successfully.`,
+        title: t('employees.updated'),
+        description: t('employees.updatedDesc').replace('{name}', values.name),
     })
     setIsOpen(false);
   };
@@ -74,9 +76,9 @@ export function EditEmployeeDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
+          <DialogTitle>{t('employees.editTitle')}</DialogTitle>
           <DialogDescription>
-            Make changes to the employee&apos;s profile here. Click save when you&apos;re done.
+            {t('employees.editDescription')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -86,7 +88,7 @@ export function EditEmployeeDialog({
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Name</FormLabel>
+                            <FormLabel>{t('general.name')}</FormLabel>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
@@ -99,7 +101,7 @@ export function EditEmployeeDialog({
                     name="email"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>{t('general.email')}</FormLabel>
                             <FormControl>
                                 <Input type="email" {...field} />
                             </FormControl>
@@ -112,7 +114,7 @@ export function EditEmployeeDialog({
                     name="rank"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Rank</FormLabel>
+                            <FormLabel>{t('general.rank')}</FormLabel>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
@@ -125,7 +127,7 @@ export function EditEmployeeDialog({
                     name="baseSalary"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Base Salary</FormLabel>
+                            <FormLabel>{t('general.baseSalary')}</FormLabel>
                             <FormControl>
                                 <Input type="number" {...field} />
                             </FormControl>
@@ -138,7 +140,7 @@ export function EditEmployeeDialog({
                     name="role"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Role</FormLabel>
+                        <FormLabel>{t('general.role')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger>
@@ -205,8 +207,8 @@ export function EditEmployeeDialog({
 
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button type="submit">Save changes</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>{t('employees.cancel')}</Button>
+                    <Button type="submit">{t('employees.save')}</Button>
                 </DialogFooter>
             </form>
         </Form>

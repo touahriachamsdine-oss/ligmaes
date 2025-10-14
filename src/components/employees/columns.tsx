@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTableColumnHeader } from "./data-table-column-header";
 import { DataTableRowActions } from "./data-table-row-actions";
 
-export const columns: ColumnDef<User>[] = [
+export const columns = (t: (key: string) => string): ColumnDef<User>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -34,7 +34,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Employee" />
+      <DataTableColumnHeader column={column} title={t('dashboard.employee')} />
     ),
     cell: ({ row }) => {
       const user = row.original;
@@ -55,13 +55,13 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "rank",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Rank" />
+      <DataTableColumnHeader column={column} title={t('general.rank')} />
     ),
   },
   {
     accessorKey: "baseSalary",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Base Salary" />
+      <DataTableColumnHeader column={column} title={t('general.baseSalary')} />
     ),
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("baseSalary"));
@@ -75,7 +75,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "attendanceRate",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Attendance" />
+      <DataTableColumnHeader column={column} title={t('dashboard.attendanceRate')} />
     ),
     cell: ({ row }) => {
       const rate = row.original.attendanceRate;
@@ -85,7 +85,7 @@ export const columns: ColumnDef<User>[] = [
     {
     accessorKey: "role",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Role" />
+      <DataTableColumnHeader column={column} title={t('general.role')} />
     ),
     cell: ({ row }) => {
       const role = row.original.role;
@@ -98,6 +98,6 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <DataTableRowActions row={row} t={t} />,
   },
 ];

@@ -19,10 +19,12 @@ import { User } from "@/lib/types"
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  t: (key: string) => string
 }
 
 export function DataTableRowActions<TData>({
   row,
+  t
 }: DataTableRowActionsProps<TData>) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const user = row.original as User;
@@ -40,11 +42,11 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-        <DropdownMenuItem>View Attendance</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>{t('general.edit')}</DropdownMenuItem>
+        <DropdownMenuItem>{t('general.viewAttendance')}</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          Delete
+          {t('general.delete')}
           <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -53,6 +55,7 @@ export function DataTableRowActions<TData>({
         isOpen={isEditDialogOpen}
         setIsOpen={setIsEditDialogOpen}
         user={user}
+        t={t}
     />
     </>
   )
