@@ -15,6 +15,7 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: 'Solminder',
   description: 'Smart HR Management',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
