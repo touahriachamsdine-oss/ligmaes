@@ -7,6 +7,7 @@ import {
   Clock,
   DollarSign,
   Menu,
+  Settings,
   Users,
 } from "lucide-react";
 import {
@@ -88,7 +89,7 @@ export default function SettingsPage() {
                 href="/settings"
                 className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
                 >
-                <Users className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
                 Settings
                 </Link>
              </nav>
@@ -155,7 +156,7 @@ export default function SettingsPage() {
                   href="/settings"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
-                  <Users className="h-5 w-5" />
+                  <Settings className="h-5 w-5" />
                   Settings
                 </Link>
               </nav>
