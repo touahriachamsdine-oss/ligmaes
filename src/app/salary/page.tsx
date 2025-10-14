@@ -253,7 +253,7 @@ export default function SalaryPage() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-20 md:pb-8">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <CardTitle>{t('salary.title')}</CardTitle>
                         <CardDescription>
@@ -261,9 +261,9 @@ export default function SalaryPage() {
                         </CardDescription>
                     </div>
                      {currentUser?.role === 'Admin' && users && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                            <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
-                            <SelectTrigger className="w-[200px]">
+                            <SelectTrigger className="w-full md:w-[200px]">
                               <SelectValue placeholder="Select Employee" />
                             </SelectTrigger>
                             <SelectContent>
@@ -272,14 +272,14 @@ export default function SalaryPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button onClick={handleGenerateNotification} disabled={isGenerating || !selectedUser || selectedUser.daysAbsent === 0}>
+                          <Button onClick={handleGenerateNotification} disabled={isGenerating || !selectedUser || selectedUser.daysAbsent === 0} className="w-full md:w-auto">
                             {isGenerating ? t('salary.generating') : t('salary.notifyAbsences')}
                           </Button>
                         </div>
                     )}
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                    <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={mockSalaryData}>
                                 <XAxis dataKey="month" />
