@@ -1,4 +1,5 @@
 
+'use client';
 import Link from "next/link";
 import {
   Activity,
@@ -28,11 +29,43 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AtProfitLogo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { mockUsers } from "@/lib/data";
 import { columns } from "@/components/employees/columns";
 import { DataTable } from "@/components/employees/data-table";
+import { useCollection, useFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { User } from "@/lib/types";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export default function EmployeesPage() {
+  const { firestore, user: authUser, isUserLoading } = useFirebase();
+  const router = useRouter();
+
+  const usersQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
+  }, [firestore]);
+
+  const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
+
+  const { data: currentUserData } = useCollection<User>(
+    useMemo(() => {
+      if (!firestore || !authUser) return null;
+      return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
+    }, [firestore, authUser])
+  );
+  
+  const currentUser = currentUserData?.[0];
+
+  if (!isUserLoading && currentUser && currentUser.role !== 'Admin') {
+    router.replace('/dashboard');
+    return null;
+  }
+
+  if (isUserLoading || usersLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+
   return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -59,13 +92,15 @@ export default function EmployeesPage() {
                 <Clock className="h-4 w-4" />
                 Clock In
               </Link>
-              <Link
-                href="/employees"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Employees
-              </Link>
+              {currentUser?.role === 'Admin' && (
+                <Link
+                  href="/employees"
+                  className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  Employees
+                </Link>
+              )}
               <Link
                 href="/attendance"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -80,6 +115,15 @@ export default function EmployeesPage() {
                 <DollarSign className="h-4 w-4" />
                 Salary
               </Link>
+               {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  >
+                    <Users className="h-4 w-4" />
+                    New Applicants
+                  </Link>
+                )}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -131,13 +175,15 @@ export default function EmployeesPage() {
                   <Clock className="h-5 w-5" />
                   Clock In
                 </Link>
-                <Link
-                  href="/employees"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl  bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Employees
-                </Link>
+                {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/employees"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl  bg-muted px-3 py-2 text-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    Employees
+                  </Link>
+                )}
                 <Link
                   href="/attendance"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -152,6 +198,15 @@ export default function EmployeesPage() {
                   <DollarSign className="h-5 w-5" />
                   Salary
                 </Link>
+                {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  >
+                    <Users className="h-4 w-4" />
+                    New Applicants
+                  </Link>
+                )}
                  <Link
                   href="/settings"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -192,7 +247,7 @@ export default function EmployeesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable columns={columns} data={mockUsers} />
+                <DataTable columns={columns} data={users || []} />
               </CardContent>
             </Card>
         </main>
@@ -200,3 +255,4 @@ export default function EmployeesPage() {
     </div>
   );
 }
+

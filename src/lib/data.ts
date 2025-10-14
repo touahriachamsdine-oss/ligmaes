@@ -1,9 +1,10 @@
+
 import type { User, Attendance, Salary } from './types';
 
 export const mockAdminUser: User = {
   uid: 'admin001',
   name: 'Admin User',
-  email: 'admin@atprofit.com',
+  email: 'Admin@gmail.com',
   avatarUrl: 'https://picsum.photos/seed/1/100/100',
   role: 'Admin',
   rank: 'HR Manager',
@@ -12,6 +13,7 @@ export const mockAdminUser: User = {
   attendanceRate: 98,
   daysAbsent: 1,
   workDays: [1, 2, 3, 4, 5],
+  accountStatus: 'Approved',
 };
 
 export const mockUsers: User[] = [
@@ -27,6 +29,7 @@ export const mockUsers: User[] = [
     attendanceRate: 100,
     daysAbsent: 0,
     workDays: [1, 2, 3, 4, 5],
+    accountStatus: 'Approved',
   },
   {
     uid: 'emp002',
@@ -40,6 +43,7 @@ export const mockUsers: User[] = [
     attendanceRate: 96,
     daysAbsent: 2,
     workDays: [1, 2, 3, 4], // Works 4 days
+    accountStatus: 'Approved',
   },
   {
     uid: 'emp003',
@@ -53,6 +57,7 @@ export const mockUsers: User[] = [
     attendanceRate: 100,
     daysAbsent: 0,
     workDays: [1, 2, 3, 4, 5],
+    accountStatus: 'Approved',
   },
   {
     uid: 'emp004',
@@ -66,6 +71,7 @@ export const mockUsers: User[] = [
     attendanceRate: 91,
     daysAbsent: 4,
     workDays: [1, 3, 5], // Works 3 days
+    accountStatus: 'Approved',
   },
   {
     uid: 'emp005',
@@ -79,6 +85,7 @@ export const mockUsers: User[] = [
     attendanceRate: 100,
     daysAbsent: 0,
     workDays: [1, 2, 3, 4, 5],
+    accountStatus: 'Approved',
   },
 ];
 
@@ -97,3 +104,4 @@ export const mockSalaryData: Salary[] = [
     { month: 'May', baseSalary: 8200, deductions: 300, netSalary: 7900 },
     { month: 'Jun', baseSalary: 8200, deductions: 50, netSalary: 8150 },
 ];
+

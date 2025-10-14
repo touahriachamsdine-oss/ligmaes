@@ -60,8 +60,8 @@ export default function Dashboard() {
 
   const attendanceQuery = useMemo(() => {
     if (!firestore) return null;
-    // Potentially query for recent attendance across all users if needed
-    // For simplicity, we'll keep using mock data for the recent attendance table for now
+    // For now, we continue to use mock data for recent attendance.
+    // A more complex query would be needed for cross-user recent attendance.
     return null;
   }, [firestore]);
 
@@ -76,8 +76,16 @@ export default function Dashboard() {
   
   const currentUser = currentUserData?.[0];
 
-  const totalSalary = useMemo(() => {
-    return users?.reduce((acc, user) => acc + user.totalSalary, 0) || 0;
+  const { totalEmployees, totalSalaryCost, totalDaysMissed, averageAttendance } = useMemo(() => {
+    if (!users) return { totalEmployees: 0, totalSalaryCost: 0, totalDaysMissed: 0, averageAttendance: 0 };
+    
+    const totalEmployees = users.length;
+    const totalSalaryCost = users.reduce((acc, user) => acc + (user.totalSalary || 0), 0);
+    const totalDaysMissed = users.reduce((acc, user) => acc + (user.daysAbsent || 0), 0);
+    const totalPossibleAttendance = users.reduce((acc, user) => acc + user.attendanceRate, 0);
+    const averageAttendance = totalPossibleAttendance / totalEmployees;
+
+    return { totalEmployees, totalSalaryCost, totalDaysMissed, averageAttendance };
   }, [users]);
   
   const mockRecentAttendance: Attendance[] = [
@@ -89,7 +97,7 @@ export default function Dashboard() {
 
 
   if (isUserLoading || usersLoading) {
-    return <div>Loading...</div>
+    return <div className="flex h-screen items-center justify-center">Loading...</div>
   }
 
   return (
@@ -118,13 +126,15 @@ export default function Dashboard() {
                 <Clock className="h-4 w-4" />
                 Clock In
               </Link>
-              <Link
-                href="/employees"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Employees
-              </Link>
+               {currentUser?.role === 'Admin' && (
+                <Link
+                  href="/employees"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  Employees
+                </Link>
+               )}
               <Link
                 href="/attendance"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -153,11 +163,11 @@ export default function Dashboard() {
           <div className="mt-auto p-4">
              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
                 <Link
-                href="/settings"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  href="/settings"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 >
-                <Settings className="h-4 w-4" />
-                Settings
+                  <Settings className="h-4 w-4" />
+                  Settings
                 </Link>
              </nav>
           </div>
@@ -199,13 +209,15 @@ export default function Dashboard() {
                   <Clock className="h-5 w-5" />
                   Clock In
                 </Link>
-                <Link
-                  href="/employees"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Employees
-                </Link>
+                 {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/employees"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    Employees
+                  </Link>
+                 )}
                 <Link
                   href="/attendance"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -270,9 +282,9 @@ export default function Dashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users?.length || 0}</div>
+                <div className="text-2xl font-bold">{totalEmployees}</div>
                 <p className="text-xs text-muted-foreground">
-                  {/* Logic for this month's change can be added here */}
+                  Approved accounts
                 </p>
               </CardContent>
             </Card>
@@ -284,9 +296,9 @@ export default function Dashboard() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">95.2%</div>
+                <div className="text-2xl font-bold">{averageAttendance.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">
-                  -1.5% from last month
+                  Company-wide average
                 </p>
               </CardContent>
             </Card>
@@ -297,22 +309,22 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(totalSalary)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'DZD' }).format(totalSalaryCost)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  July 2024
+                  Per month
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Days Missed</CardTitle>
+                <CardTitle className="text-sm font-medium">Days Missed (Total)</CardTitle>
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">6</div>
+                <div className="text-2xl font-bold">{totalDaysMissed}</div>
                 <p className="text-xs text-muted-foreground">
-                  -1 from last month
+                  Across all employees
                 </p>
               </CardContent>
             </Card>
@@ -327,7 +339,7 @@ export default function Dashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  {users && users.map(employee => (
+                  {users && users.filter(user => user.uid !== currentUser.uid).map(employee => (
                     <div key={employee.uid} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -403,3 +415,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

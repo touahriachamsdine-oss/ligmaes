@@ -29,35 +29,63 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { mockRecentAttendance, mockUsers } from "@/lib/data";
 import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "@/lib/types";
+import { Attendance, User } from "@/lib/types";
+import { useCollection, useFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 export default function AttendancePage() {
-  const [selectedUser, setSelectedUser] = useState<User | null>(mockUsers[0]);
+  const { firestore, user: authUser, isUserLoading } = useFirebase();
 
-  const attendanceData = [...mockRecentAttendance, 
-    { id: 'att5', userId: 'emp005', userName: 'Isabella Jones', userAvatarUrl: 'https://picsum.photos/seed/6/100/100', date: '2024-07-29', checkInTime: '09:00', status: 'Present' },
-    { id: 'att6', userId: 'emp003', userName: 'Sophia Williams', userAvatarUrl: 'https://picsum.photos/seed/4/100/100', date: '2024-07-29', checkInTime: '08:45', status: 'Present' },
-    { id: 'att7', userId: 'admin001', userName: 'Admin User', userAvatarUrl: 'https://picsum.photos/seed/1/100/100', date: '2024-07-29', checkInTime: '09:05', status: 'Present' },
-    // Adding more data for calendar view
-    { id: 'att8', userId: 'emp001', userName: 'Olivia Martin', date: '2024-07-01', status: 'Present' },
-    { id: 'att9', userId: 'emp001', userName: 'Olivia Martin', date: '2024-07-02', status: 'Present' },
-    { id: 'att10', userId: 'emp002', userName: 'Liam Anderson', date: '2024-07-03', status: 'Late' },
-    { id: 'att11', userId: 'emp004', userName: 'Noah Brown', date: '2024-07-03', status: 'Absent' },
-    { id: 'att12', userId: 'emp003', userName: 'Sophia Williams', date: '2024-07-05', status: 'On Leave' },
-    { id: 'att13', userId: 'emp001', userName: 'Olivia Martin', date: '2024-07-08', status: 'Present' },
-  ];
+  // Fetch all approved users for the dropdown
+  const usersQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
+  }, [firestore]);
+  const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
-  const handleUserChange = (userId: string) => {
-    const user = mockUsers.find(u => u.uid === userId) || null;
-    setSelectedUser(user);
-  };
+  // Fetch current user's role
+  const { data: currentUserData } = useCollection<User>(
+    useMemo(() => {
+      if (!firestore || !authUser) return null;
+      return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
+    }, [firestore, authUser])
+  );
+  const currentUser = currentUserData?.[0];
 
-  const filteredAttendance = selectedUser ? attendanceData.filter(a => a.userId === selectedUser.uid) : [];
+  // State for the selected user in the dropdown
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+  // Determine which user to display attendance for
+  const displayUserId = useMemo(() => {
+    if (currentUser?.role === 'Admin') {
+      return selectedUserId; // Admin can select any user
+    }
+    return authUser?.uid; // Employee can only see their own
+  }, [currentUser, selectedUserId, authUser]);
+
+  const selectedUser = useMemo(() => {
+    return users?.find(u => u.uid === displayUserId) || null;
+  }, [users, displayUserId]);
+
+  // Fetch attendance for the selected user
+  const attendanceQuery = useMemo(() => {
+    if (!firestore || !displayUserId) return null;
+    return collection(firestore, 'users', displayUserId, 'attendance');
+  }, [firestore, displayUserId]);
+  
+  const { data: attendanceData, isLoading: attendanceLoading } = useCollection<Attendance>(attendanceQuery);
+  
+  // Set default selected user for admin
+  if (currentUser?.role === 'Admin' && !selectedUserId && users && users.length > 0) {
+      setSelectedUserId(users[0].uid);
+  }
+
+  if (isUserLoading || usersLoading || (displayUserId && attendanceLoading)) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -85,13 +113,15 @@ export default function AttendancePage() {
                 <Clock className="h-4 w-4" />
                 Clock In
               </Link>
-              <Link
-                href="/employees"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Employees
-              </Link>
+              {currentUser?.role === 'Admin' && (
+                <Link
+                  href="/employees"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  Employees
+                </Link>
+              )}
               <Link
                 href="/attendance"
                 className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
@@ -106,6 +136,15 @@ export default function AttendancePage() {
                 <DollarSign className="h-4 w-4" />
                 Salary
               </Link>
+               {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  >
+                    <Users className="h-4 w-4" />
+                    New Applicants
+                  </Link>
+                )}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -157,13 +196,15 @@ export default function AttendancePage() {
                   <Clock className="h-5 w-5" />
                   Clock In
                 </Link>
-                <Link
-                  href="/employees"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Employees
-                </Link>
+                {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/employees"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    Employees
+                  </Link>
+                )}
                 <Link
                   href="/attendance"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
@@ -178,6 +219,15 @@ export default function AttendancePage() {
                   <DollarSign className="h-5 w-5" />
                   Salary
                 </Link>
+                {currentUser?.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    New Applicants
+                  </Link>
+                )}
                  <Link
                   href="/settings"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -213,25 +263,27 @@ export default function AttendancePage() {
               <div>
                 <CardTitle>Attendance Calendar</CardTitle>
                 <CardDescription>
-                  View employee attendance in a calendar format.
+                   {currentUser?.role === 'Admin' ? 'View employee attendance in a calendar format.' : 'View your attendance in a calendar format.'}
                 </CardDescription>
               </div>
-              <div className="w-[200px]">
-                <Select onValueChange={handleUserChange} defaultValue={selectedUser?.uid}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockUsers.map(user => (
-                      <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {currentUser?.role === 'Admin' && (
+                <div className="w-[200px]">
+                  <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users?.map(user => (
+                        <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {selectedUser ? (
-                 <AttendanceCalendar attendance={filteredAttendance} workDays={selectedUser.workDays}/>
+                 <AttendanceCalendar attendance={attendanceData || []} workDays={selectedUser.workDays}/>
               ) : (
                 <p>Please select an employee to view their attendance.</p>
               )}
@@ -242,3 +294,4 @@ export default function AttendancePage() {
     </div>
   );
 }
+

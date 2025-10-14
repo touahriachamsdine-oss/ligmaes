@@ -1,4 +1,5 @@
 
+'use client';
 import Link from "next/link";
 import {
   Activity,
@@ -29,11 +30,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockAdminUser } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { useCollection, useFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { useMemo } from "react";
+import { User } from "@/lib/types";
 
 export default function ProfilePage() {
-  const user = mockAdminUser;
+  const { user: authUser, isUserLoading } = useFirebase();
+
+  const { data: userData, isLoading: userLoading } = useCollection<User>(useMemo(() => {
+    if (!authUser) return null;
+    return query(collection(authUser.firestore, "users"), where("uid", "==", authUser.uid));
+  }, [authUser]));
+
+  const user = userData?.[0];
+
+  if (isUserLoading || userLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <div className="flex h-screen items-center justify-center">User not found.</div>;
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -61,13 +80,15 @@ export default function ProfilePage() {
                 <Clock className="h-4 w-4" />
                 Clock In
               </Link>
-              <Link
-                href="/employees"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Employees
-              </Link>
+              {user.role === 'Admin' && (
+                <Link
+                  href="/employees"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  Employees
+                </Link>
+              )}
               <Link
                 href="/attendance"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -82,6 +103,15 @@ export default function ProfilePage() {
                 <DollarSign className="h-4 w-4" />
                 Salary
               </Link>
+               {user.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  >
+                    <Users className="h-4 w-4" />
+                    New Applicants
+                  </Link>
+                )}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -133,13 +163,15 @@ export default function ProfilePage() {
                   <Clock className="h-5 w-5" />
                   Clock In
                 </Link>
-                <Link
-                  href="/employees"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Employees
-                </Link>
+                {user.role === 'Admin' && (
+                  <Link
+                    href="/employees"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    Employees
+                  </Link>
+                )}
                 <Link
                   href="/attendance"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -154,6 +186,15 @@ export default function ProfilePage() {
                   <DollarSign className="h-5 w-5" />
                   Salary
                 </Link>
+                {user.role === 'Admin' && (
+                  <Link
+                    href="/applicants"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Users className="h-5 w-5" />
+                    New Applicants
+                  </Link>
+                )}
                  <Link
                   href="/settings"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
