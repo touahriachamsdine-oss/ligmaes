@@ -1,4 +1,3 @@
-
 'use client';
 import Link from "next/link";
 import {
@@ -38,11 +37,18 @@ import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/lib/language-provider";
 import { BottomNavBar } from "@/components/ui/bottom-nav-bar";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { EmployeeCardList } from "@/components/employees/employee-card-list";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 export default function EmployeesPage() {
   const { firestore, user: authUser, isUserLoading } = useFirebase();
   const router = useRouter();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
+  const [searchTerm, setSearchTerm] = useState('');
+
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -58,6 +64,10 @@ export default function EmployeesPage() {
   const { data: currentUserData } = useCollection<User>(currentUserQuery);
   
   const currentUser = currentUserData?.[0];
+
+  const filteredUsers = users?.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!isUserLoading && currentUser && currentUser.role !== 'Admin') {
     router.replace('/dashboard');
@@ -216,7 +226,14 @@ export default function EmployeesPage() {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Can add search here if needed */}
+             <div className="w-full flex-1">
+              <Input
+                placeholder={t('employees.filterByName')}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-8 w-full lg:w-[250px] bg-card"
+              />
+            </div>
           </div>
           <LanguageSwitcher />
           <ThemeToggle />
@@ -246,7 +263,11 @@ export default function EmployeesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable columns={columns(t)} data={users || []} t={t} />
+                {isMobile ? (
+                  <EmployeeCardList users={filteredUsers || []} t={t} />
+                ) : (
+                  <DataTable columns={columns(t)} data={filteredUsers || []} t={t} />
+                )}
               </CardContent>
             </Card>
         </main>
