@@ -25,7 +25,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { useFirebase, useCollection, useDoc } from "@/firebase";
+import { useFirebase, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { useMemo, useState } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { User, Setting, Salary } from "@/lib/types";
@@ -52,14 +52,14 @@ export default function SalaryPage() {
     const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const { data: currentUserData } = useCollection<User>(useMemo(() => {
+    const { data: currentUserData } = useCollection<User>(useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
         return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
     }, [firestore, authUser]));
     const currentUser = currentUserData?.[0];
 
-    const usersQuery = useMemo(() => {
-        if (!firestore || currentUser?.role !== 'Admin') return null;
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore || !currentUser || currentUser?.role !== 'Admin') return null;
         return query(collection(firestore, 'users'), where('accountStatus', '==', 'Approved'));
     }, [firestore, currentUser]);
     const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
@@ -68,17 +68,21 @@ export default function SalaryPage() {
 
     const displayUserId = useMemo(() => {
         if (currentUser?.role === 'Admin') {
-            return selectedUserId || authUser?.uid;
+            // If admin and no one is selected, default to their own view or first user
+            return selectedUserId || users?.[0]?.uid;
         }
         return authUser?.uid;
-    }, [currentUser, selectedUserId, authUser]);
+    }, [currentUser, selectedUserId, authUser, users]);
 
-    const { data: selectedUser, isLoading: selectedUserLoading } = useDoc<User>(useMemo(() => {
+    const { data: selectedUser, isLoading: selectedUserLoading } = useDoc<User>(useMemoFirebase(() => {
         if (!firestore || !displayUserId) return null;
         return doc(firestore, 'users', displayUserId);
     }, [firestore, displayUserId]));
-
-    const settingsRef = useMemo(() => doc(firestore, 'settings', 'global'), [firestore]);
+    
+    const settingsRef = useMemoFirebase(() => {
+      if (!firestore || !authUser) return null; // Wait for user
+      return doc(firestore, 'settings', 'global')
+    }, [firestore, authUser]);
     const { data: settings } = useDoc<Setting>(settingsRef);
 
     const handleGenerateNotification = async () => {
@@ -113,7 +117,12 @@ export default function SalaryPage() {
         netSalary: { label: "Net Salary", color: "hsl(var(--chart-3))" },
     };
 
-    if (isUserLoading || usersLoading || selectedUserLoading) {
+    // Set default selection for admin
+    if (currentUser?.role === 'Admin' && !selectedUserId && users && users.length > 0) {
+      setSelectedUserId(users[0].uid);
+    }
+
+    if (isUserLoading || !currentUser || (currentUser.role === 'Admin' && usersLoading) || (displayUserId && selectedUserLoading)) {
       return <div className="flex h-screen w-full items-center justify-center">Loading...</div>
     }
 
@@ -296,8 +305,10 @@ export default function SalaryPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Close</AlertDialogCancel>
               <AlertDialogAction onClick={() => {
-                navigator.clipboard.writeText(notification?.notificationText || '');
-                toast({ title: "Copied!", description: "Notification copied to clipboard."});
+                if (notification?.notificationText) {
+                  navigator.clipboard.writeText(notification.notificationText);
+                  toast({ title: "Copied!", description: "Notification copied to clipboard."});
+                }
                 setIsNotificationDialogOpen(false);
               }}>Copy Text</AlertDialogAction>
             </AlertDialogFooter>
@@ -307,3 +318,5 @@ export default function SalaryPage() {
     </div>
   );
 }
+
+    

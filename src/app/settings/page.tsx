@@ -31,15 +31,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useFirebase, useDoc } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { useFirebase, useDoc, useMemoFirebase, useCollection } from "@/firebase";
+import { doc, setDoc, query, where, collection } from "firebase/firestore";
 import { useMemo, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Setting } from "@/lib/types";
+import { Setting, User } from "@/lib/types";
 
 const formSchema = z.object({
   payCutRate: z.coerce.number().min(0, "Pay cut rate must be a positive number."),
@@ -49,16 +49,24 @@ const formSchema = z.object({
 
 
 export default function SettingsPage() {
-  const { firestore, user } = useFirebase();
+  const { firestore, user: authUser, isUserLoading } = useFirebase();
   const { toast } = useToast();
 
-  const settingsRef = useMemo(() => {
-    if (!firestore) return null;
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore || !authUser) return null; // Wait until user is loaded
     return doc(firestore, 'settings', 'global');
-  }, [firestore]);
+  }, [firestore, authUser]);
 
-  const { data: settingsData, isLoading } = useDoc<Setting>(settingsRef);
+  const { data: settingsData, isLoading: settingsLoading } = useDoc<Setting>(settingsRef);
   
+  const { data: currentUserData } = useCollection<User>(
+    useMemoFirebase(() => {
+      if (!firestore || !authUser) return null;
+      return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
+    }, [firestore, authUser])
+  );
+  const currentUser = currentUserData?.[0];
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -95,7 +103,11 @@ export default function SettingsPage() {
     }
   };
 
-  const isAdmin = user?.email === 'Admin@gmail.com'; // Simplified admin check
+  if (isUserLoading || !currentUser || settingsLoading) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
+
+  const isAdmin = currentUser.role === 'Admin';
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -267,9 +279,6 @@ export default function SettingsPage() {
           </DropdownMenu>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          {isLoading ? (
-            <p>Loading settings...</p>
-          ) : (
           <Card>
             <CardHeader>
               <CardTitle>Company Settings</CardTitle>
@@ -319,14 +328,15 @@ export default function SettingsPage() {
                       </FormItem>
                     )}
                   />
-                  {isAdmin && <Button type="submit">Save Changes</Button>}
+                  {isAdmin && <Button type="submit" disabled={form.formState.isSubmitting}>Save Changes</Button>}
                 </form>
               </Form>
             </CardContent>
           </Card>
-          )}
         </main>
       </div>
     </div>
   );
 }
+
+    
