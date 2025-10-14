@@ -48,11 +48,11 @@ export function EmployeeCard({ user, t }: EmployeeCardProps) {
         </div>
         <div>
           <p className="text-muted-foreground">{t('general.role')}</p>
-          <p>
+          <div>
             <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
               {user.role}
             </Badge>
-          </p>
+          </div>
         </div>
       </div>
     </Card>
