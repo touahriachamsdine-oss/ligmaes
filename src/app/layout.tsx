@@ -13,7 +13,7 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'AtProfit HR',
+  title: 'Solminder',
   description: 'Smart HR Management',
 };
 

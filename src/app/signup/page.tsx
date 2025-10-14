@@ -87,7 +87,7 @@ export default function SignupPage() {
           <div className="flex justify-center items-center mb-4">
             <AtProfitLogo className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-headline">Create your AtProfit HR Account</CardTitle>
+          <CardTitle className="text-2xl font-headline">Create your Solminder Account</CardTitle>
           <CardDescription>Enter your information to create an account</CardDescription>
         </CardHeader>
         <CardContent>

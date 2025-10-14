@@ -133,7 +133,7 @@ export default function SalaryPage() {
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <AtProfitLogo className="h-6 w-6 text-primary" />
-              <span className="font-headline">AtProfit HR</span>
+              <span className="font-headline">Solminder</span>
             </Link>
           </div>
           <div className="flex-1">
@@ -191,7 +191,7 @@ export default function SalaryPage() {
               <nav className="grid gap-2 text-lg font-medium">
                 <Link href="#" className="flex items-center gap-2 text-lg font-semibold">
                   <AtProfitLogo className="h-6 w-6 text-primary" />
-                   <span className="font-headline">AtProfit HR</span>
+                   <span className="font-headline">Solminder</span>
                 </Link>
                 <Link href="/dashboard" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                   <Users className="h-5 w-5" />
@@ -318,5 +318,3 @@ export default function SalaryPage() {
     </div>
   );
 }
-
-    

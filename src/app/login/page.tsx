@@ -69,7 +69,7 @@ export default function LoginPage() {
           <div className="flex justify-center items-center mb-4">
             <AtProfitLogo className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-headline">Welcome to AtProfit HR</CardTitle>
+          <CardTitle className="text-2xl font-headline">Welcome to Solminder</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
