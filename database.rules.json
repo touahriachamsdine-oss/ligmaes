@@ -3,7 +3,7 @@
     "devices": {
       "ESP32_FP_01": {
         ".read": "auth != null",
-        ".write": "auth != null",
+        ".write": "true",
         "latest": {
           ".validate": "newData.hasChildren(['result','fingerId','timestamp'])"
         }
