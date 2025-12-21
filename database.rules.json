@@ -1,6 +1,19 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "fingerprint": {
+      "events": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$eventId": {
+          ".validate": "newData.hasChildren(['result', 'id', 'timestamp', 'deviceId'])"
+        }
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    }
   }
 }
