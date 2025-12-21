@@ -44,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useEffect } from 'react';
 
 const weekDays = [
     { id: 0, label: 'Sun' },
@@ -91,10 +92,12 @@ export default function AddEmployeePage() {
   const { data: currentUserData, isLoading: currentUserLoading } = useCollection<User>(currentUserQuery);
   const currentUser = currentUserData?.[0];
   
-  if (!isUserLoading && currentUser && currentUser.role !== 'Admin') {
-    router.replace('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (!isUserLoading && currentUser && currentUser.role !== 'Admin') {
+      router.replace('/dashboard');
+    }
+  }, [isUserLoading, currentUser, router]);
+
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!auth || !firestore) return;
@@ -142,7 +145,7 @@ export default function AddEmployeePage() {
     }
   };
   
-  if (isUserLoading || currentUserLoading || !currentUser) {
+  if (isUserLoading || currentUserLoading || !currentUser || currentUser.role !== 'Admin') {
     return <div>{t('general.loading')}</div>;
   }
 
