@@ -2,7 +2,7 @@
   "rules": {
     "devices": {
       "ESP32_FP_01": {
-        ".read": "true",
+        ".read": "auth != null",
         ".write": "true",
         "latest": {
           ".validate": "newData.hasChildren(['result','fingerId','timestamp'])"
