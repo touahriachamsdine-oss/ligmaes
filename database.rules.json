@@ -3,7 +3,7 @@
     "fingerprint": {
       "events": {
         ".read": "auth != null",
-        ".write": "auth != null",
+        ".write": true,
         "$eventId": {
           ".validate": "newData.hasChildren(['result', 'id', 'timestamp', 'deviceId'])"
         }
