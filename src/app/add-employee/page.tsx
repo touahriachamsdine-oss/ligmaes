@@ -8,6 +8,8 @@ import {
   Menu,
   Settings,
   Users,
+  Fingerprint,
+  CheckCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,7 +31,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, limitToLast, onValue, ref } from 'firebase/firestore';
+import { getDatabase, ref as dbRef, onValue as onDbValue, query as dbQuery, limitToLast as dbLimitToLast, off } from 'firebase/database';
 import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -44,7 +47,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEffect } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import React, { useEffect, useState } from 'react';
 
 const weekDays = [
     { id: 0, label: 'Sun' },
@@ -61,27 +70,39 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
   rank: z.string().min(2, 'Rank is required.'),
+  jobDescription: z.string().optional(),
   baseSalary: z.coerce.number().min(0, 'Salary must be a positive number.'),
   role: z.enum(['Admin', 'Employee']),
   workDays: z.array(z.number()).min(1, "Employee must work at least one day"),
+  startDate: z.date({
+    required_error: "A start date is required.",
+  }),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 export default function AddEmployeePage() {
-  const { firestore, auth, user: authUser, isUserLoading } = useFirebase();
+  const { firestore, auth, user: authUser, isUserLoading, firebaseApp } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  
+  const [step, setStep] = useState<'details' | 'fingerprint' | 'confirmed'>('details');
+  const [newEmployeeData, setNewEmployeeData] = useState<FormValues | null>(null);
+  const [fingerprintId, setFingerprintId] = useState<number | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
       password: '',
       rank: '',
+      jobDescription: '',
       baseSalary: 0,
       role: 'Employee',
       workDays: [1, 2, 3, 4, 5],
+      startDate: new Date(),
     },
   });
 
@@ -98,34 +119,69 @@ export default function AddEmployeePage() {
     }
   }, [isUserLoading, currentUser, router]);
 
+  useEffect(() => {
+    if (step !== 'fingerprint' || !firebaseApp) return;
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!auth || !firestore) return;
+    const db = getDatabase(firebaseApp);
+    const eventsRef = dbRef(db, 'fingerprint/events');
+    const q = dbQuery(eventsRef, dbLimitToLast(1));
+
+    const unsubscribe = onDbValue(q, (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const eventKey = Object.keys(data)[0];
+            const latestEvent = data[eventKey];
+
+            if (latestEvent.result === 'ENROLLED') {
+                setFingerprintId(latestEvent.id);
+                setStep('confirmed');
+                toast({
+                    title: "Fingerprint Registered",
+                    description: `Fingerprint ID ${latestEvent.id} has been successfully captured.`
+                });
+            }
+        }
+    });
+
+    return () => off(eventsRef);
+  }, [step, firebaseApp, toast]);
+
+
+  const handleDetailsSubmit = (values: FormValues) => {
+    setNewEmployeeData(values);
+    setStep('fingerprint');
+  };
+
+  const finalizeEmployeeCreation = async () => {
+    if (!auth || !firestore || !newEmployeeData || fingerprintId === null) return;
     try {
       // Note: This creates a temporary user in auth. In a real app you might use a server-side function
       // to avoid this, but for simplicity we'll create it on the client.
-      const tempUserCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const tempUserCredential = await createUserWithEmailAndPassword(auth, newEmployeeData.email, newEmployeeData.password);
       const newUser = tempUserCredential.user;
 
-      const userDoc = {
+      const userDoc: Omit<User, 'id'> = {
         uid: newUser.uid,
-        name: values.name,
-        email: values.email,
-        role: values.role,
+        name: newEmployeeData.name,
+        email: newEmployeeData.email,
+        role: newEmployeeData.role,
         accountStatus: 'Approved',
-        rank: values.rank,
-        baseSalary: values.baseSalary,
-        totalSalary: values.baseSalary,
+        rank: newEmployeeData.rank,
+        baseSalary: newEmployeeData.baseSalary,
+        totalSalary: newEmployeeData.baseSalary,
         attendanceRate: 100,
         daysAbsent: 0,
-        workDays: values.workDays,
+        workDays: newEmployeeData.workDays,
+        startDate: newEmployeeData.startDate.toISOString(),
+        jobDescription: newEmployeeData.jobDescription,
+        fingerprintId: fingerprintId,
       };
 
       await setDoc(doc(firestore, 'users', newUser.uid), userDoc);
 
       toast({
         title: 'Employee Added',
-        description: `${values.name} has been added as a new employee.`,
+        description: `${newEmployeeData.name} has been added as a new employee.`,
       });
 
       // Sign the admin back in
@@ -142,11 +198,173 @@ export default function AddEmployeePage() {
         title: 'Failed to Add Employee',
         description: error.message || 'An unexpected error occurred.',
       });
+      setStep('details'); // Go back to details form on error
     }
   };
   
   if (isUserLoading || currentUserLoading || !currentUser || currentUser.role !== 'Admin') {
     return <div>{t('general.loading')}</div>;
+  }
+
+  const renderContent = () => {
+    switch (step) {
+      case 'fingerprint':
+        return (
+          <div className="text-center py-12">
+            <Fingerprint className="mx-auto h-24 w-24 text-primary animate-pulse" />
+            <h2 className="mt-6 text-xl font-semibold">Awaiting Fingerprint</h2>
+            <p className="mt-2 text-muted-foreground">Please ask the new employee to place their finger on the scanner to enroll.</p>
+          </div>
+        );
+      case 'confirmed':
+        return (
+          <div className="text-center py-12">
+            <CheckCircle className="mx-auto h-24 w-24 text-green-500" />
+            <h2 className="mt-6 text-xl font-semibold">Fingerprint Registered!</h2>
+            <p className="mt-2 text-muted-foreground">Fingerprint ID: {fingerprintId} has been successfully captured.</p>
+             <Button onClick={finalizeEmployeeCreation} className="mt-8">Finalize and Create Employee</Button>
+          </div>
+        );
+      case 'details':
+      default:
+        return (
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleDetailsSubmit)} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="password" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl><Input type="password" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="rank" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rank / Job Title</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField control={form.control} name="baseSalary" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Base Salary (DZD)</FormLabel>
+                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="role" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Employee">Employee</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField control={form.control} name="startDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? ( format(field.value, "PPP")) : ( <span>Pick a date</span>)}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                 )} />
+                 <div />
+                 <FormField control={form.control} name="jobDescription" render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <div className='flex justify-between items-center'>
+                      <FormLabel>Job Description</FormLabel>
+                       <Button variant="link" size="sm" asChild><Link href="/job-description" target="_blank">Generate with AI</Link></Button>
+                    </div>
+                    <FormControl><Textarea {...field} rows={6} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+               <FormField
+                  control={form.control}
+                  name="workDays"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel>Work Days</FormLabel>
+                      </div>
+                      <div className="grid grid-cols-4 md:grid-cols-7 gap-4">
+                      {weekDays.map((day) => (
+                        <FormField
+                          key={day.id}
+                          control={form.control}
+                          name="workDays"
+                          render={({ field }) => {
+                            return (
+                              <FormItem key={day.id} className="flex flex-row items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(day.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, day.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== day.id
+                                            )
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal text-sm">
+                                  {day.label}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              <div className="flex justify-end pt-4">
+                 <Button type="submit" disabled={form.formState.isSubmitting}>
+                    Proceed to Fingerprint Enrollment
+                 </Button>
+              </div>
+            </form>
+          </Form>
+        );
+    }
   }
 
   return (
@@ -264,115 +482,14 @@ export default function AddEmployeePage() {
             <CardHeader>
               <CardTitle>Add New Employee</CardTitle>
               <CardDescription>
-                Fill out the form below to create a new employee account.
+                {step === 'details' 
+                    ? "Fill out the form below to create a new employee account."
+                    : "Follow the steps to enroll the new employee's fingerprint."
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="email" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="password" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="rank" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rank / Job Title</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="baseSalary" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Base Salary (DZD)</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="role" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Employee">Employee</SelectItem>
-                            <SelectItem value="Admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                   <FormField
-                      control={form.control}
-                      name="workDays"
-                      render={() => (
-                        <FormItem>
-                          <div className="mb-4">
-                            <FormLabel>Work Days</FormLabel>
-                          </div>
-                          <div className="grid grid-cols-4 md:grid-cols-7 gap-4">
-                          {weekDays.map((day) => (
-                            <FormField
-                              key={day.id}
-                              control={form.control}
-                              name="workDays"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem key={day.id} className="flex flex-row items-center space-x-2 space-y-0">
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(day.id)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, day.id])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== day.id
-                                                )
-                                              )
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="font-normal text-sm">
-                                      {day.label}
-                                    </FormLabel>
-                                  </FormItem>
-                                )
-                              }}
-                            />
-                          ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  <div className="flex justify-end pt-4">
-                     <Button type="submit" disabled={form.formState.isSubmitting}>
-                        Create Employee
-                     </Button>
-                  </div>
-                </form>
-              </Form>
+                {renderContent()}
             </CardContent>
           </Card>
         </main>
@@ -381,3 +498,5 @@ export default function AddEmployeePage() {
     </div>
   );
 }
+
+    

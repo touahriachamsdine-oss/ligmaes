@@ -1,6 +1,7 @@
 
 export type User = {
   uid: string;
+  id?: string;
   name: string;
   email: string;
   avatarUrl?: string;
@@ -12,6 +13,9 @@ export type User = {
   daysAbsent: number;
   workDays?: number[]; // 0 for Sunday, 6 for Saturday
   accountStatus: 'Pending' | 'Approved' | 'Rejected';
+  startDate?: string;
+  jobDescription?: string;
+  fingerprintId?: number;
 };
 
 export type Attendance = {
@@ -38,3 +42,5 @@ export type Setting = {
   companyName: string;
   companyAddress: string;
 }
+
+    
