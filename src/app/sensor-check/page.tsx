@@ -1,0 +1,277 @@
+'use client';
+import Link from 'next/link';
+import {
+  Activity,
+  CircleUser,
+  Clock,
+  DollarSign,
+  Menu,
+  Settings,
+  Users,
+  Fingerprint,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { AtProfitLogo } from '@/components/icons';
+import { ThemeToggle } from '@/components/theme-toggle';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { User } from '@/lib/types';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useLanguage } from '@/lib/language-provider';
+import { BottomNavBar } from '@/components/ui/bottom-nav-bar';
+import { useEffect, useState } from 'react';
+import { getDatabase, ref, onValue, off } from 'firebase/database';
+import { Badge } from '@/components/ui/badge';
+
+type SensorStatus = {
+  status: 'connected' | 'disconnected';
+  lastSeen: number;
+};
+
+export default function SensorCheckPage() {
+  const { firestore, auth, user: authUser, isUserLoading, firebaseApp } = useFirebase();
+  const { t } = useLanguage();
+  const [sensorStatus, setSensorStatus] = useState<SensorStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { data: currentUserData, isLoading: isCurrentUserLoading } = useCollection<User>(
+    useMemoFirebase(() => {
+      if (!firestore || !authUser) return null;
+      return query(collection(firestore, 'users'), where('uid', '==', authUser.uid));
+    }, [firestore, authUser])
+  );
+  const currentUser = currentUserData?.[0];
+
+  useEffect(() => {
+    if (!firebaseApp) return;
+
+    const db = getDatabase(firebaseApp);
+    const healthRef = ref(db, 'devices/ESP32_FP_01/health');
+    
+    const unsubscribe = onValue(healthRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setSensorStatus(snapshot.val());
+      } else {
+        setSensorStatus(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => off(healthRef, 'value', unsubscribe);
+  }, [firebaseApp]);
+
+  const isAdmin = currentUser?.role === 'Admin';
+
+  if (isUserLoading || isCurrentUserLoading) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
+  
+  const isConnected = sensorStatus?.status === 'connected';
+
+  return (
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <AtProfitLogo className="h-6 w-6 text-primary" />
+              <span className="font-headline">Solminder</span>
+            </Link>
+          </div>
+          <div className="flex-1">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Users className="h-4 w-4" />
+                {t('nav.dashboard')}
+              </Link>
+              <Link
+                href="/clock-in"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Clock className="h-4 w-4" />
+                {t('nav.clockIn')}
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/employees"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  {t('nav.employees')}
+                </Link>
+              )}
+              <Link
+                href="/attendance"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Activity className="h-4 w-4" />
+                {t('nav.attendance')}
+              </Link>
+              <Link
+                href="/salary"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <DollarSign className="h-4 w-4" />
+                {t('nav.salary')}
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/applicants"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Users className="h-4 w-4" />
+                  {t('nav.newApplicants')}
+                </Link>
+              )}
+              <Link
+                  href="/sensor-check"
+                  className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+                >
+                  <Fingerprint className="h-4 w-4" />
+                  Sensor Status
+                </Link>
+              <Link
+                href="/settings"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Settings className="h-4 w-4" />
+                {t('nav.settings')}
+              </Link>
+            </nav>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col">
+              <nav className="grid gap-2 text-lg font-medium">
+                <Link href="#" className="flex items-center gap-2 text-lg font-semibold">
+                  <AtProfitLogo className="h-6 w-6 text-primary" />
+                  <span className="font-headline">Solminder</span>
+                </Link>
+                <Link href="/dashboard" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                  <Users className="h-5 w-5" />
+                  {t('nav.dashboard')}
+                </Link>
+                <Link href="/clock-in" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                  <Clock className="h-5 w-5" />
+                  {t('nav.clockIn')}
+                </Link>
+                {isAdmin && (
+                  <Link href="/employees" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                    <Users className="h-5 w-5" />
+                    {t('nav.employees')}
+                  </Link>
+                )}
+                <Link href="/attendance" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                  <Activity className="h-5 w-5" />
+                  {t('nav.attendance')}
+                </Link>
+                <Link href="/salary" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                  <DollarSign className="h-5 w-5" />
+                  {t('nav.salary')}
+                </Link>
+                {isAdmin && (
+                  <Link href="/applicants" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                    <Users className="h-4 w-4" />
+                    {t('nav.newApplicants')}
+                  </Link>
+                )}
+                 <Link href="/sensor-check" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground">
+                    <Fingerprint className="h-5 w-5" />
+                    Sensor Status
+                </Link>
+                <Link href="/settings" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+                  <Settings className="h-5 w-5" />
+                  {t('nav.settings')}
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          <div className="w-full flex-1" />
+          <LanguageSwitcher />
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="rounded-full">
+                <CircleUser className="h-5 w-5" />
+                <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('nav.myAccount')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link href="/profile">{t('nav.profile')}</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/settings">{t('nav.settings')}</Link></DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link href="/login">{t('nav.logout')}</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                <CardTitle>Fingerprint Sensor Status</CardTitle>
+                <CardDescription>
+                    This page shows the real-time connection status of the fingerprint sensor.
+                </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-6 p-10">
+                    {isLoading ? (
+                        <p>Loading status...</p>
+                    ) : (
+                        <>
+                            {isConnected ? (
+                                <Wifi className="h-24 w-24 text-green-500" />
+                            ) : (
+                                <WifiOff className="h-24 w-24 text-destructive" />
+                            )}
+                            <div className="text-center">
+                                <p className="text-lg font-medium">Device: ESP32_FP_01</p>
+                                <Badge variant={isConnected ? 'default' : 'destructive'} className={isConnected ? 'bg-green-500' : ''}>
+                                    {sensorStatus?.status || 'unknown'}
+                                </Badge>
+                                {sensorStatus?.lastSeen && (
+                                     <p className="text-sm text-muted-foreground mt-2">
+                                        Last seen: {new Date(sensorStatus.lastSeen * 1000).toLocaleString()}
+                                    </p>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+        </main>
+        <BottomNavBar userRole={currentUser?.role} />
+      </div>
+    </div>
+  );
+}

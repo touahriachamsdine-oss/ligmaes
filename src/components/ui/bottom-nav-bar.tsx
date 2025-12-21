@@ -1,6 +1,6 @@
 'use client';
 import { useLanguage } from '@/lib/language-provider';
-import { Activity, Clock, DollarSign, Home, Users } from 'lucide-react';
+import { Activity, Clock, DollarSign, Fingerprint, Home, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -21,12 +21,16 @@ export function BottomNavBar({ userRole }: BottomNavBarProps) {
   
   if (userRole === 'Admin') {
     navItems.splice(2, 0, { href: '/employees', label: t('nav.employees'), icon: Users });
+    navItems.push({ href: '/sensor-check', label: 'Sensor', icon: Fingerprint });
   }
+
+  const itemsToShow = userRole === 'Admin' ? 5 : 4;
+
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t shadow-sm md:hidden">
-      <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
-        {navItems.slice(0, 4).map((item) => {
+      <div className={`grid h-full max-w-lg grid-cols-${itemsToShow} mx-auto font-medium`}>
+        {navItems.slice(0, itemsToShow).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
