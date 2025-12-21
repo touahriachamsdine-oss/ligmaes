@@ -1,7 +1,7 @@
 "use client"
 
 import { Table } from "@tanstack/react-table"
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button"
 
 interface DataTableToolbarProps<TData> {
@@ -19,7 +19,9 @@ export function DataTableToolbar<TData>({
       <div className="flex flex-1 items-center space-x-2">
         {/* Search is now in the header */}
       </div>
-      <Button>{t('employees.addEmployee')}</Button>
+      <Button asChild>
+        <Link href="/add-employee">{t('employees.addEmployee')}</Link>
+      </Button>
     </div>
   )
 }
