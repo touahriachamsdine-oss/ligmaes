@@ -1,13 +1,12 @@
 {
   "rules": {
-    "fingerprint": {
-      ".read": true,
-      ".write": true
-    },
-    "users": {
-      "$uid": {
-        ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid"
+    "devices": {
+      "ESP32_FP_01": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "latest": {
+          ".validate": "newData.hasChildren(['result','fingerId','timestamp'])"
+        }
       }
     }
   }

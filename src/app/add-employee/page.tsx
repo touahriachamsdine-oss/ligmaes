@@ -31,8 +31,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, limitToLast, onValue, ref } from 'firebase/firestore';
-import { getDatabase, ref as dbRef, onValue as onDbValue, query as dbQuery, limitToLast as dbLimitToLast, off } from 'firebase/database';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { getDatabase, ref as dbRef, onValue as onDbValue, off } from 'firebase/database';
 import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -123,27 +123,24 @@ export default function AddEmployeePage() {
     if (step !== 'fingerprint' || !firebaseApp) return;
 
     const db = getDatabase(firebaseApp);
-    const eventsRef = dbRef(db, 'fingerprint/events');
-    const q = dbQuery(eventsRef, dbLimitToLast(1));
+    const deviceRef = dbRef(db, 'devices/ESP32_FP_01/latest');
 
-    const unsubscribe = onDbValue(q, (snapshot) => {
+    const unsubscribe = onDbValue(deviceRef, (snapshot) => {
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            const eventKey = Object.keys(data)[0];
-            const latestEvent = data[eventKey];
-
-            if (latestEvent.result === 'ENROLLED') {
-                setFingerprintId(latestEvent.id);
+            const latestEvent = snapshot.val();
+            
+            if (latestEvent.result === 'ENROLLED' && latestEvent.fingerId) {
+                setFingerprintId(latestEvent.fingerId);
                 setStep('confirmed');
                 toast({
                     title: "Fingerprint Registered",
-                    description: `Fingerprint ID ${latestEvent.id} has been successfully captured.`
+                    description: `Fingerprint ID ${latestEvent.fingerId} has been successfully captured.`
                 });
             }
         }
     });
 
-    return () => off(eventsRef);
+    return () => off(deviceRef);
   }, [step, firebaseApp, toast]);
 
 
@@ -498,5 +495,3 @@ export default function AddEmployeePage() {
     </div>
   );
 }
-
-    
